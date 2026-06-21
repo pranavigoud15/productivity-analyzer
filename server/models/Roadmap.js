@@ -87,6 +87,13 @@ const roadmapSchema = new mongoose.Schema(
       model: { type: String, default: null },
       generatedAt: { type: Date, default: null },
     },
+    // Stored, not just derived client-side — cascadeToGoal computes this
+    // on every milestone change anyway, so persisting it costs nothing
+    // and lets future features (Insights, Leaderboard) read it directly.
+    progress: {
+      type: Number,
+      default: 0,
+    },
     milestones: [milestoneSchema],
   },
   { timestamps: true }
