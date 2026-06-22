@@ -12,6 +12,7 @@ import {
   Star,
   ClipboardList,
   AlertTriangle,
+  BookOpen,
 } from 'lucide-react';
 
 // path: null = feature not built yet, renders disabled (same "coming
@@ -22,10 +23,11 @@ const NAV_ITEMS = [
   { label: 'Tasks', icon: ListChecks, path: '/tasks' },
   { label: 'My Goals', icon: Target, path: '/goals' },
   { label: 'Roadmaps', icon: Map, path: '/roadmaps' },
+  { label: 'Journal', icon: BookOpen, path: '/journals' },
+  { label: 'Notes', icon: StickyNote, path: '/notes' },
   { label: 'Travel', icon: Plane, path: null },
   { label: 'Insights', icon: BarChart3, path: null },
   { label: 'History', icon: History, path: null },
-  { label: 'Notes', icon: StickyNote, path: null },
   { label: 'Key Points', icon: Star, path: null },
   { label: 'Mock Tests', icon: ClipboardList, path: null },
   { label: 'Mistakes', icon: AlertTriangle, path: null },

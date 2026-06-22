@@ -8,6 +8,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const goalRoutes = require("./routes/goalRoutes");
 const roadmapRoutes = require("./routes/roadmapRoutes");
+const journalRoutes = require('./routes/journalRoutes');
+const noteRoutes = require('./routes/noteRoutes');
 
 dotenv.config();
 
@@ -22,6 +24,8 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/roadmaps", roadmapRoutes);
+app.use('/api/journals', journalRoutes);
+app.use('/api/notes', noteRoutes);
 
 // MongoDB Connection
 mongoose

@@ -1,10 +1,3 @@
-// NOTE: This is a reconstruction, not a diff of your actual App.jsx — I
-// don't have that file's real contents. Merge this routing structure
-// with whatever your real Login/Signup imports and any existing
-// guard/wrapper components actually look like. The part that matters is
-// the new block: Dashboard/Goals/Roadmaps/Tasks all nested under one
-// <Layout /> parent route instead of being standalone routes.
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -12,6 +5,8 @@ import Dashboard from './pages/Dashboard';
 import Goals from './pages/Goals';
 import Roadmaps from './pages/Roadmaps';
 import Tasks from './pages/Tasks';
+import Journals from './pages/Journals';
+import Notes from './pages/Notes';
 import Layout from './layouts/Layout';
 
 export default function App() {
@@ -26,6 +21,8 @@ export default function App() {
         <Route path="/goals" element={<Goals />} />
         <Route path="/roadmaps" element={<Roadmaps />} />
         <Route path="/tasks" element={<Tasks />} />
+        <Route path="/journals" element={<Journals />} />
+        <Route path="/notes" element={<Notes />} />
       </Route>
     </Routes>
   );
