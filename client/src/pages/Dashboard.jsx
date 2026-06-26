@@ -12,6 +12,8 @@ import {
   CalendarDays,
   Map,
   Sparkles,
+  BookOpen,
+  StickyNote,
 } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
@@ -22,32 +24,6 @@ function getGreeting() {
   if (hour < 12) return 'Good Morning';
   if (hour < 17) return 'Good Afternoon';
   return 'Good Evening';
-}
-
-// Consecutive days (today, or yesterday if nothing's completed yet today)
-// with at least one completed task. Pure client-side derivation.
-function calculateStreak(tasks) {
-  const completedDates = new Set(
-    tasks
-      .filter((t) => t.completed && t.completedAt)
-      .map((t) => new Date(t.completedAt).toDateString())
-  );
-
-  if (completedDates.size === 0) return 0;
-
-  let streak = 0;
-  const cursor = new Date();
-
-  if (!completedDates.has(cursor.toDateString())) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  while (completedDates.has(cursor.toDateString())) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  return streak;
 }
 
 function CurrentGoalCard({ goal }) {
@@ -69,7 +45,6 @@ function CurrentGoalCard({ goal }) {
     <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-bold text-slate-800">Current Goal</h2>
       <p className="mt-3 truncate text-sm font-medium text-slate-700">{goal.title}</p>
-
       <div className="mt-3">
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: `${progress}%` }} />
@@ -98,28 +73,54 @@ function RoadmapProgressCard({ roadmap }) {
     );
   }
 
-  const milestones = roadmap.milestones || [];
-  const total = milestones.length;
-  const completed = milestones.filter((m) => m.status === 'completed').length;
-  const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
-  const currentMilestone = milestones.find((m) => m.status !== 'completed');
+  const progress = Math.min(100, Math.max(0, Number(roadmap.progress) || 0));
+  const currentMilestone = roadmap.currentMilestone;
 
   return (
     <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-bold text-slate-800">Roadmap Progress</h2>
       <p className="mt-3 truncate text-sm font-medium text-slate-700">{roadmap.title}</p>
-
       <div className="mt-3">
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${progress}%` }} />
         </div>
         <p className="mt-1.5 text-xs text-slate-400">{progress}% complete</p>
       </div>
-
       <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
         <Map className="h-3.5 w-3.5 text-sky-500" />
         {currentMilestone ? `Current: ${currentMilestone.title}` : 'All milestones complete'}
       </p>
+    </div>
+  );
+}
+
+function RecentJournalCard({ entry }) {
+  if (!entry) {
+    return (
+      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-800">Recent Journal Entry</h2>
+        <p className="mt-4 text-sm text-slate-400">No journal entries yet.</p>
+      </div>
+    );
+  }
+
+  const formattedDate = entry.date
+    ? new Date(entry.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
+  return (
+    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-bold text-slate-800">Recent Journal Entry</h2>
+      <p className="mt-3 truncate text-sm font-medium text-slate-700">{entry.title}</p>
+      {formattedDate && (
+        <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+          <CalendarDays className="h-3 w-3" />
+          {formattedDate}
+        </p>
+      )}
+      {entry.content && (
+        <p className="mt-2 line-clamp-2 text-xs text-slate-500">{entry.content}</p>
+      )}
     </div>
   );
 }
@@ -135,9 +136,7 @@ function PendingTaskRow({ task }) {
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [goals, setGoals] = useState([]);
-  const [roadmaps, setRoadmaps] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -145,16 +144,12 @@ export default function Dashboard() {
     setIsLoading(true);
     setLoadError('');
     try {
-      const [dashboardRes, tasksRes, goalsRes, roadmapsRes] = await Promise.all([
+      const [dashboardRes, summaryRes] = await Promise.all([
         API.get('/dashboard', { headers: getAuthHeaders() }),
-        API.get('/tasks', { headers: getAuthHeaders() }),
-        API.get('/goals', { headers: getAuthHeaders() }),
-        API.get('/roadmaps', { headers: getAuthHeaders() }),
+        API.get('/dashboard/summary', { headers: getAuthHeaders() }),
       ]);
       setUser(dashboardRes.data.user || dashboardRes.data);
-      setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : tasksRes.data.tasks || []);
-      setGoals(Array.isArray(goalsRes.data) ? goalsRes.data : goalsRes.data.goals || []);
-      setRoadmaps(Array.isArray(roadmapsRes.data) ? roadmapsRes.data : roadmapsRes.data.roadmaps || []);
+      setSummary(summaryRes.data);
     } catch (err) {
       if (err.response?.status === 401) {
         clearAuthAndRedirect();
@@ -174,45 +169,6 @@ export default function Dashboard() {
     fetchOverview();
   }, [fetchOverview]);
 
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.completed).length;
-  const pendingTasks = totalTasks - completedTasks;
-  const currentStreak = calculateStreak(tasks);
-
-  const totalGoals = goals.length;
-  const completedGoals = goals.filter((g) => g.status === 'completed').length;
-
-  // "Current" goal: most recently created active (non-completed) goal.
-  // goals[] is already sorted newest-first by the backend, so the first
-  // non-completed entry is exactly that.
-  const currentGoal = goals.find((g) => g.status !== 'completed') || null;
-
-  // Prefer the roadmap linked to the current goal; fall back to the most
-  // recently created roadmap if there's no current goal (or no match).
-  const currentRoadmap =
-    roadmaps.find((r) => String(r.goal?._id || r.goal) === String(currentGoal?._id || currentGoal?.id)) ||
-    roadmaps[0] ||
-    null;
-
-  // First 3 pending tasks in API order (newest-created first) — there's
-  // no due-date field on Task yet, so this isn't a priority queue, just
-  // a quick glance at what's outstanding.
-  const topPendingTasks = tasks.filter((t) => !t.completed).slice(0, 3);
-
-  const stats = [
-    { label: 'Total Tasks', value: totalTasks, icon: ListTodo, color: 'violet' },
-    { label: 'Completed Tasks', value: completedTasks, icon: CheckCircle2, color: 'emerald' },
-    { label: 'Pending Tasks', value: pendingTasks, icon: Target, color: 'sky' },
-    {
-      label: 'Current Streak',
-      value: `${currentStreak} day${currentStreak === 1 ? '' : 's'}`,
-      icon: Flame,
-      color: 'orange',
-    },
-    { label: 'Total Goals', value: totalGoals, icon: Trophy, color: 'indigo' },
-    { label: 'Completed Goals', value: completedGoals, icon: Award, color: 'teal' },
-  ];
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
@@ -221,6 +177,45 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  if (!summary) {
+    return (
+      <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+        <span>{loadError || 'Could not load your dashboard.'}</span>
+        <button
+          onClick={fetchOverview}
+          className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const taskGoalStats = [
+    { label: 'Total Tasks', value: summary.totalTasks, icon: ListTodo, color: 'violet' },
+    { label: 'Completed Tasks', value: summary.completedTasks, icon: CheckCircle2, color: 'emerald' },
+    { label: 'Pending Tasks', value: summary.pendingTasks, icon: Target, color: 'sky' },
+    {
+      label: 'Current Streak',
+      value: `${summary.currentStreak} day${summary.currentStreak === 1 ? '' : 's'}`,
+      icon: Flame,
+      color: 'orange',
+    },
+    { label: 'Total Goals', value: summary.totalGoals, icon: Trophy, color: 'indigo' },
+    { label: 'Completed Goals', value: summary.completedGoals, icon: Award, color: 'teal' },
+  ];
+
+  const journalNoteStats = [
+    { label: 'Journal Entries', value: summary.journalCount, icon: BookOpen, color: 'cyan' },
+    { label: 'Notes', value: summary.notesCount, icon: StickyNote, color: 'amber' },
+    {
+      label: 'Journal Streak',
+      value: `${summary.journalStreak} day${summary.journalStreak === 1 ? '' : 's'}`,
+      icon: Flame,
+      color: 'rose',
+    },
+  ];
 
   return (
     <>
@@ -248,24 +243,31 @@ export default function Dashboard() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {stats.map((stat) => (
+        {taskGoalStats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <CurrentGoalCard goal={currentGoal} />
-        <RoadmapProgressCard roadmap={currentRoadmap} />
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {journalNoteStats.map((stat) => (
+          <StatCard key={stat.label} {...stat} />
+        ))}
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <CurrentGoalCard goal={summary.activeGoal} />
+        <RoadmapProgressCard roadmap={summary.activeRoadmap} />
+        <RecentJournalCard entry={summary.recentJournalEntry} />
       </section>
 
       <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-bold text-slate-800">Top Pending Tasks</h2>
         <div className="mt-4">
-          {topPendingTasks.length === 0 ? (
+          {summary.topPendingTasks.length === 0 ? (
             <p className="py-4 text-center text-sm text-slate-400">Nothing pending — you're all caught up.</p>
           ) : (
             <ul className="space-y-2">
-              {topPendingTasks.map((task) => (
+              {summary.topPendingTasks.map((task) => (
                 <PendingTaskRow key={task._id || task.id} task={task} />
               ))}
             </ul>
@@ -279,14 +281,17 @@ export default function Dashboard() {
           Quick Summary
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
-          You've completed <span className="font-semibold text-slate-800">{completedTasks}</span> of{' '}
-          <span className="font-semibold text-slate-800">{totalTasks}</span> tasks, with a current streak of{' '}
+          You've completed{' '}
+          <span className="font-semibold text-slate-800">{summary.completedTasks}</span> of{' '}
+          <span className="font-semibold text-slate-800">{summary.totalTasks}</span> tasks, with a
+          current streak of{' '}
           <span className="font-semibold text-slate-800">
-            {currentStreak} day{currentStreak === 1 ? '' : 's'}
+            {summary.currentStreak} day{summary.currentStreak === 1 ? '' : 's'}
           </span>
-          . You have <span className="font-semibold text-slate-800">{totalGoals - completedGoals}</span> active
-          goal{totalGoals - completedGoals === 1 ? '' : 's'}
-          {currentGoal ? ` — currently focused on "${currentGoal.title}".` : '.'}
+          . You have{' '}
+          <span className="font-semibold text-slate-800">{summary.activeGoals}</span> active
+          goal{summary.activeGoals === 1 ? '' : 's'}
+          {summary.activeGoal ? ` — currently focused on "${summary.activeGoal.title}".` : '.'}
         </p>
       </section>
     </>

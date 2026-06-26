@@ -7,23 +7,32 @@ import Roadmaps from './pages/Roadmaps';
 import Tasks from './pages/Tasks';
 import Journals from './pages/Journals';
 import Notes from './pages/Notes';
+import MockTests from './pages/MockTests';
+import FocusMode from './pages/FocusMode';
 import Layout from './layouts/Layout';
+import { FocusProvider } from './context/FocusContext';
+import FloatingTimer from './components/common/FloatingTimer';
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+    <FocusProvider>
+      <FloatingTimer />
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
-      <Route element={<Layout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/goals" element={<Goals />} />
-        <Route path="/roadmaps" element={<Roadmaps />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/journals" element={<Journals />} />
-        <Route path="/notes" element={<Notes />} />
-      </Route>
-    </Routes>
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/roadmaps" element={<Roadmaps />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/journals" element={<Journals />} />
+          <Route path="/notes" element={<Notes />} />
+          <Route path="/mock-tests" element={<MockTests />} />
+          <Route path="/focus" element={<FocusMode />} />
+        </Route>
+      </Routes>
+    </FocusProvider>
   );
 }

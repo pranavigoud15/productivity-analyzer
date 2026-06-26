@@ -5,6 +5,9 @@ const COLOR_STYLES = {
   orange: { border: 'border-orange-100', bg: 'bg-orange-50', iconBg: 'bg-orange-100', text: 'text-orange-600' },
   indigo: { border: 'border-indigo-100', bg: 'bg-indigo-50', iconBg: 'bg-indigo-100', text: 'text-indigo-600' },
   teal: { border: 'border-teal-100', bg: 'bg-teal-50', iconBg: 'bg-teal-100', text: 'text-teal-600' },
+  cyan: { border: 'border-cyan-100', bg: 'bg-cyan-50', iconBg: 'bg-cyan-100', text: 'text-cyan-600' },
+  amber: { border: 'border-amber-100', bg: 'bg-amber-50', iconBg: 'bg-amber-100', text: 'text-amber-600' },
+  rose: { border: 'border-rose-100', bg: 'bg-rose-50', iconBg: 'bg-rose-100', text: 'text-rose-600' },
 };
 
 export default function StatCard({ icon: Icon, label, value, color }) {

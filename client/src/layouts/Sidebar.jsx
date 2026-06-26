@@ -13,6 +13,7 @@ import {
   ClipboardList,
   AlertTriangle,
   BookOpen,
+  Timer,
 } from 'lucide-react';
 
 // path: null = feature not built yet, renders disabled (same "coming
@@ -25,11 +26,12 @@ const NAV_ITEMS = [
   { label: 'Roadmaps', icon: Map, path: '/roadmaps' },
   { label: 'Journal', icon: BookOpen, path: '/journals' },
   { label: 'Notes', icon: StickyNote, path: '/notes' },
+  { label: 'Focus Mode', icon: Timer, path: '/focus' },
   { label: 'Travel', icon: Plane, path: null },
   { label: 'Insights', icon: BarChart3, path: null },
   { label: 'History', icon: History, path: null },
   { label: 'Key Points', icon: Star, path: null },
-  { label: 'Mock Tests', icon: ClipboardList, path: null },
+  { label: 'Mock Tests', icon: ClipboardList, path: '/mock-tests' },,
   { label: 'Mistakes', icon: AlertTriangle, path: null },
 ];
 
