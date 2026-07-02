@@ -3,6 +3,9 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 
+dotenv.config();
+
+console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY);
 const authRoutes = require("./routes/authRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const taskRoutes = require("./routes/taskRoutes");
@@ -11,8 +14,11 @@ const roadmapRoutes = require("./routes/roadmapRoutes");
 const journalRoutes = require("./routes/journalRoutes");
 const noteRoutes = require("./routes/noteRoutes");
 const mockTestRoutes = require("./routes/mockTestRoutes");
+const leaderboardRoutes = require("./routes/leaderboardRoutes");
+const insightsRoutes = require('./routes/insightsRoutes');
+const assistantRoutes = require("./routes/assistantRoutes");
 
-dotenv.config();
+
 
 const app = express();
 
@@ -28,6 +34,9 @@ app.use("/api/roadmaps", roadmapRoutes);
 app.use("/api/journals", journalRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/mock-tests", mockTestRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
+app.use('/api/insights', insightsRoutes);
+app.use("/api/assistant", assistantRoutes);
 
 // MongoDB Connection
 mongoose
