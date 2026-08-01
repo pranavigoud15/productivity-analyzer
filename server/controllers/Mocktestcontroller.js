@@ -1,5 +1,6 @@
-const MockTest = require('../models/MockTest');
+const MockTest        = require('../models/MockTest');
 const MockTestAttempt = require('../models/MockTestAttempt');
+const automation      = require('../automation/automationService');
 
 // Seed data — enough tests to demonstrate the full subject/difficulty
 // matrix. Questions are intentionally kept to 5 per test so the seed is
@@ -300,8 +301,6 @@ const seedMockTests = async (req, res) => {
 
 // @desc   Get all published mock tests (no questions in list — lighter payload)
 // @route  GET /api/mock-tests
-// @desc   Get all published mock tests (no questions in list — lighter payload)
-// @route  GET /api/mock-tests
 const getMockTests = async (req, res) => {
   try {
     const tests = await MockTest.find(
@@ -311,16 +310,12 @@ const getMockTests = async (req, res) => {
 
     res.status(200).json(tests);
   } catch (err) {
-  console.error("GET MOCK TESTS ERROR:", err);
-
-  res.status(500).json({
-    success: false,
-    message: err.message,
-  });
-}
+    console.error('GET MOCK TESTS ERROR:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
-// @desc   Get a single mock test WITH questions (questions needed during test)
+// @desc   Get a single mock test WITH questions (needed during test)
 // @route  GET /api/mock-tests/:id
 const getMockTestById = async (req, res) => {
   try {
@@ -328,15 +323,13 @@ const getMockTestById = async (req, res) => {
     if (!test || !test.isPublished) {
       return res.status(404).json({ message: 'Mock test not found.' });
     }
-    // Strip correctOption & explanation before sending to client —
-    // they are only needed at submit time.
+    // Strip correctOption & explanation before sending to client
     const sanitised = {
       ...test.toObject(),
       questions: test.questions.map((q) => ({
-        _id: q._id,
+        _id:          q._id,
         questionText: q.questionText,
-        options: q.options,
-        // correctOption and explanation intentionally omitted
+        options:      q.options,
       })),
     };
     res.status(200).json(sanitised);
@@ -345,62 +338,68 @@ const getMockTestById = async (req, res) => {
   }
 };
 
-// @desc   Submit a completed mock test attempt
+// @desc   Submit a completed mock test attempt. Fires onMockTestCompleted
+//         automation event which links the result to a roadmap task and
+//         cascades progress updates.
 // @route  POST /api/mock-tests/:id/submit
 const submitMockTest = async (req, res) => {
   try {
     const { answers, startedAt, timeTakenSeconds } = req.body;
-    // answers: { [questionId]: selectedOption }
 
     const test = await MockTest.findById(req.params.id);
     if (!test || !test.isPublished) {
       return res.status(404).json({ message: 'Mock test not found.' });
     }
 
-    let correctCount = 0;
+    let correctCount   = 0;
     let incorrectCount = 0;
     let unansweredCount = 0;
 
     const questionResults = test.questions.map((q) => {
-      const id = String(q._id);
+      const id       = String(q._id);
       const selected = answers[id] || null;
       const isCorrect = selected === q.correctOption;
 
-      if (!selected) unansweredCount++;
+      if (!selected)      unansweredCount++;
       else if (isCorrect) correctCount++;
-      else incorrectCount++;
+      else                incorrectCount++;
 
       return {
-        questionId: q._id,
-        questionText: q.questionText,
-        options: q.options,
-        correctOption: q.correctOption,
+        questionId:     q._id,
+        questionText:   q.questionText,
+        options:        q.options,
+        correctOption:  q.correctOption,
         selectedOption: selected,
         isCorrect,
-        explanation: q.explanation || '',
+        explanation:    q.explanation || '',
       };
     });
 
     const percentage = Math.round((correctCount / test.questions.length) * 10000) / 100;
 
     const attempt = await MockTestAttempt.create({
-      user: req.user.id,
-      mockTest: test._id,
-      subject: test.subject,
-      topic: test.topic,
-      difficulty: test.difficulty,
-      title: test.title,
-      score: correctCount,
+      user:           req.user.id,
+      mockTest:       test._id,
+      subject:        test.subject,
+      topic:          test.topic,
+      difficulty:     test.difficulty,
+      title:          test.title,
+      score:          correctCount,
       totalQuestions: test.questions.length,
       correctCount,
       incorrectCount,
       unansweredCount,
       percentage,
-      startedAt: new Date(startedAt),
-      completedAt: new Date(),
+      startedAt:      new Date(startedAt),
+      completedAt:    new Date(),
       timeTakenSeconds,
       questionResults,
     });
+
+    // Fire and forget — submit response must not be blocked by automation.
+    automation.onMockTestCompleted(req.user.id, attempt).catch(err =>
+      console.error('[Automation] onMockTestCompleted error — attemptId=', attempt._id, err)
+    );
 
     res.status(201).json(attempt);
   } catch (err) {
@@ -408,7 +407,7 @@ const submitMockTest = async (req, res) => {
   }
 };
 
-// @desc   Get all attempts by the logged-in user (history list — no question results)
+// @desc   Get all attempts by the logged-in user (history — no question results)
 // @route  GET /api/mock-tests/attempts
 const getUserAttempts = async (req, res) => {
   try {
@@ -427,7 +426,7 @@ const getUserAttempts = async (req, res) => {
 const getAttemptById = async (req, res) => {
   try {
     const attempt = await MockTestAttempt.findOne({
-      _id: req.params.attemptId,
+      _id:  req.params.attemptId,
       user: req.user.id,
     });
     if (!attempt) {
@@ -448,18 +447,20 @@ const getMockTestStats = async (req, res) => {
       'percentage completedAt timeTakenSeconds score'
     ).sort({ completedAt: -1 });
 
-    if (attempts.length === 0) {
+    if (!attempts.length) {
       return res.status(200).json({
-        attemptCount: 0,
-        bestPercentage: null,
-        averagePercentage: null,
-        latestAttempt: null,
+        attemptCount:       0,
+        bestPercentage:     null,
+        averagePercentage:  null,
+        latestAttempt:      null,
       });
     }
 
-    const percentages = attempts.map((a) => a.percentage);
-    const bestPercentage = Math.max(...percentages);
-    const averagePercentage = Math.round(percentages.reduce((s, p) => s + p, 0) / percentages.length * 100) / 100;
+    const percentages       = attempts.map(a => a.percentage);
+    const bestPercentage    = Math.max(...percentages);
+    const averagePercentage = Math.round(
+      (percentages.reduce((s, p) => s + p, 0) / percentages.length) * 100
+    ) / 100;
 
     res.status(200).json({
       attemptCount: attempts.length,
