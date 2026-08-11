@@ -76,7 +76,7 @@ exports.completeTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-   if (task.source === 'roadmap-generated' && task.mockTest) {
+   if (task.source === 'roadmap-generated') {
     return res.status(403).json({
         message: 'Practice tasks are verified automatically via mock tests.',
     });
