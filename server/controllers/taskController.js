@@ -63,6 +63,10 @@ exports.updateTask = async (req, res) => {
 // @desc   Toggle a task's completed state. Sets/clears completedAt.
 //         Fires onTaskCompleted automation event which cascades
 //         milestone → roadmap → goal progress if task is roadmap-linked.
+//         Practice tasks (source: 'roadmap-generated') cannot be toggled
+//         here — they are verified automatically via mock test
+//         submission (see automation/mockAutomation.js). This route
+//         remains the only way manual tasks get completed.
 // @route  PATCH /api/tasks/:id/complete
 exports.completeTask = async (req, res) => {
   try {
@@ -71,6 +75,12 @@ exports.completeTask = async (req, res) => {
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
+
+   if (task.source === 'roadmap-generated' && task.mockTest) {
+    return res.status(403).json({
+        message: 'Practice tasks are verified automatically via mock tests.',
+    });
+}
 
     task.completed   = !task.completed;
     task.completedAt = task.completed ? new Date() : null;

@@ -3,6 +3,7 @@ import { CheckCircle2, Circle, ChevronDown, ChevronUp, Loader2, Map, Trophy, Awa
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
 import StatCard from '../components/common/StatCard';
+import ContextAI from '../components/assistant/ContextAI';
 
 function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -36,6 +37,22 @@ function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
         </div>
         <p className="mt-1.5 text-xs text-slate-400">{progress}% complete</p>
       </div>
+
+      <ContextAI
+        module="roadmaps"
+        context={{
+          title: roadmap.title,
+          totalMilestones,
+          completedMilestones,
+          pendingMilestones,
+          progress,
+          milestones: milestones.map((m) => ({
+            title: m.title,
+            status: m.status,
+          })),
+        }}
+        title={roadmap.title}
+      />
 
       {isExpanded && (
         <ul className="mt-4 space-y-2 border-t border-slate-200 pt-3">

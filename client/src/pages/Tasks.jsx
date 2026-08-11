@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, CheckCircle2, Circle, Clock, X, Loader2, Trash2, Pencil, Check } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Clock, X, Loader2, Trash2, Pencil, Check, ShieldCheck } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
+import ContextAI from '../components/assistant/ContextAI';
 
 function TaskItem({ task, isPending, onToggleComplete, onUpdate, onDelete }) {
   const isCompleted = Boolean(task.completed);
+  const isAutoVerified =
+  task.source === 'roadmap-generated' && task.mockTest;
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(task.title);
   const [isSaving, setIsSaving] = useState(false);
@@ -77,65 +80,97 @@ function TaskItem({ task, isPending, onToggleComplete, onUpdate, onDelete }) {
   }
 
   return (
-    <li className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
-      <div className="flex min-w-0 items-center gap-3">
-        <button
-          onClick={() => onToggleComplete(task)}
-          disabled={isPending}
-          aria-label={isCompleted ? 'Mark as pending' : 'Mark as complete'}
-          className="shrink-0 disabled:opacity-50"
-        >
-          {isCompleted ? (
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+    <li className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          {isAutoVerified ? (
+            <span
+              aria-label={isCompleted ? 'Completed (auto-verified)' : 'Pending (auto-verified via mock test)'}
+              title="Verified automatically via mock test — cannot be marked complete manually"
+              className="shrink-0 cursor-default"
+            >
+              {isCompleted ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              ) : (
+                <Circle className="h-5 w-5 text-slate-300" />
+              )}
+            </span>
           ) : (
-            <Circle className="h-5 w-5 text-slate-300 hover:text-violet-400" />
+            <button
+              onClick={() => onToggleComplete(task)}
+              disabled={isPending}
+              aria-label={isCompleted ? 'Mark as pending' : 'Mark as complete'}
+              className="shrink-0 disabled:opacity-50"
+            >
+              {isCompleted ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              ) : (
+                <Circle className="h-5 w-5 text-slate-300 hover:text-violet-400" />
+              )}
+            </button>
           )}
-        </button>
-        <div className="min-w-0">
-          <p className={`truncate text-sm font-medium ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-            {task.title}
-          </p>
-          <div className="mt-0.5 flex items-center gap-2">
-            {createdTime && (
-              <p className="flex items-center gap-1 text-xs text-slate-400">
-                <Clock className="h-3 w-3" />
-                {createdTime}
-              </p>
-            )}
-            {task.source === 'roadmap-generated' && (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
-                From Roadmap
-              </span>
-            )}
+          <div className="min-w-0">
+            <p className={`truncate text-sm font-medium ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+              {task.title}
+            </p>
+            <div className="mt-0.5 flex items-center gap-2">
+              {createdTime && (
+                <p className="flex items-center gap-1 text-xs text-slate-400">
+                  <Clock className="h-3 w-3" />
+                  {createdTime}
+                </p>
+              )}
+              {task.source === 'roadmap-generated' && (
+                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                  From Roadmap
+                </span>
+              )}
+              {isAutoVerified && (
+                <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                  <ShieldCheck className="h-3 w-3" />
+                  Auto-verified via Mock Test
+                </span>
+              )}
+            </div>
           </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            {isCompleted ? 'Completed' : 'Pending'}
+          </span>
+          <button
+            onClick={startEditing}
+            disabled={isPending}
+            aria-label="Edit task"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-50"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onDelete(task)}
+            disabled={isPending}
+            aria-label="Delete task"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          {isCompleted ? 'Completed' : 'Pending'}
-        </span>
-        <button
-          onClick={startEditing}
-          disabled={isPending}
-          aria-label="Edit task"
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-50"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => onDelete(task)}
-          disabled={isPending}
-          aria-label="Delete task"
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
+      <ContextAI
+        module="tasks"
+        context={{
+          title: task.title,
+          completed: task.completed,
+          source: task.source,
+        }}
+        title={task.title}
+      />
     </li>
   );
 }

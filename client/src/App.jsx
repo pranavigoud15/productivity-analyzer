@@ -12,6 +12,9 @@ import FocusMode from './pages/FocusMode';
 import Layout from './layouts/Layout';
 import { FocusProvider } from './context/FocusContext';
 import FloatingTimer from './components/common/FloatingTimer';
+import Leaderboard from './pages/Leaderboard';
+import Insights from './pages/Insights';
+import Assistant from "./pages/Assistant";
 
 export default function App() {
   return (
@@ -31,6 +34,9 @@ export default function App() {
           <Route path="/notes" element={<Notes />} />
           <Route path="/mock-tests" element={<MockTests />} />
           <Route path="/focus" element={<FocusMode />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/assistant" element={<Assistant />} />
         </Route>
       </Routes>
     </FocusProvider>

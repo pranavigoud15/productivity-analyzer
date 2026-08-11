@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   BookOpen,
   Timer,
+  Trophy,
+  Bot,
 } from 'lucide-react';
 
 // path: null = feature not built yet, renders disabled (same "coming
@@ -28,11 +30,13 @@ const NAV_ITEMS = [
   { label: 'Notes', icon: StickyNote, path: '/notes' },
   { label: 'Focus Mode', icon: Timer, path: '/focus' },
   { label: 'Travel', icon: Plane, path: null },
-  { label: 'Insights', icon: BarChart3, path: null },
+  { label: 'Insights', icon: BarChart3, path: '/insights' },
   { label: 'History', icon: History, path: null },
   { label: 'Key Points', icon: Star, path: null },
-  { label: 'Mock Tests', icon: ClipboardList, path: '/mock-tests' },,
+  { label: 'Mock Tests', icon: ClipboardList, path: '/mock-tests' },
+  { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
   { label: 'Mistakes', icon: AlertTriangle, path: null },
+  { label: "Assistant", icon: Bot, path: "/assistant" }
 ];
 
 function NavItem({ icon: Icon, label, path }) {
@@ -47,7 +51,9 @@ function NavItem({ icon: Icon, label, path }) {
         <span className="hidden md:inline">{label}</span>
       </span>
     );
+    
   }
+  
 
   return (
     <NavLink
@@ -62,6 +68,7 @@ function NavItem({ icon: Icon, label, path }) {
       <span className="hidden md:inline">{label}</span>
     </NavLink>
   );
+  
 }
 
 export default function Sidebar() {

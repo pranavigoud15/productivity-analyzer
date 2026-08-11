@@ -35,6 +35,12 @@ const mockTestSchema = new mongoose.Schema(
     durationMinutes: { type: Number, required: true, min: 1 },
     questions: { type: [questionSchema], required: true },
     isPublished: { type: Boolean, default: true },
+    // Minimum percentage (0-100) a user must score on an attempt for
+    // automatic Practice Task Verification to mark the linked task
+    // complete. Checked in automation/mockAutomation.js against
+    // MockTestAttempt.percentage. Defaults to 60 for existing/seeded
+    // tests that predate this field.
+    passingPercentage: { type: Number, default: 60, min: 0, max: 100 },
     // Future-ready: AI generation provenance, leaderboard eligibility.
     aiMetadata: { type: mongoose.Schema.Types.Mixed, default: null },
   },

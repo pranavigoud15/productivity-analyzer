@@ -1,6 +1,7 @@
-const Roadmap = require('../models/Roadmap');
-const Goal    = require('../models/Goal');
-const Task    = require('../models/Task');
+const Roadmap  = require('../models/Roadmap');
+const Task     = require('../models/Task');
+const Goal     = require('../models/Goal');
+const MockTest = require('../models/MockTest');
 
 // ── Curricula (moved from roadmapController — single source of truth) ────────
 
@@ -63,6 +64,46 @@ function buildMilestonesForGoal(goal) {
   });
 }
 
+// ── Mock test matching (used only at task generation time) ───────────────────
+
+/**
+ * Finds a MockTest to link a newly generated task to, using the same
+ * subject/topic substring heuristic mockAutomation.js uses as its
+ * fallback match — just run here at generation time instead of at
+ * attempt time, so the resulting task gets an explicit `mockTest` ref
+ * instead of relying on the fuzzy match later.
+ *
+ * Match priority:
+ *   1. MockTest.subject appears in the milestone title (case-insensitive)
+ *   2. MockTest.topic appears in the milestone title (case-insensitive)
+ *
+ * Only considers published tests. A null result is not an error — the
+ * task is simply created with mockTest: null and falls back to
+ * mockAutomation.js's fuzzy matching at attempt time, exactly like
+ * tasks generated before this field existed.
+ */
+async function findMatchingMockTest(milestoneTitle) {
+  const titleLower = (milestoneTitle || '').toLowerCase();
+  if (!titleLower) return null;
+
+  const mockTests = await MockTest.find({ isPublished: true }).lean();
+  if (!mockTests.length) return null;
+
+  // Priority 1 — subject appears in the milestone title
+  let match = mockTests.find(mt =>
+    mt.subject && titleLower.includes(mt.subject.toLowerCase())
+  );
+
+  // Priority 2 — topic appears in the milestone title
+  if (!match) {
+    match = mockTests.find(mt =>
+      mt.topic && titleLower.includes(mt.topic.toLowerCase())
+    );
+  }
+
+  return match || null;
+}
+
 // ── Core automation functions ─────────────────────────────────────────────────
 
 /**
@@ -94,6 +135,12 @@ async function generateRoadmapForGoal(goal) {
  * Idempotent: for each milestone, creates a Task only if one does not
  * already exist with that roadmap+milestone pair. Pushes the task _id
  * into milestone.tasks and saves once per roadmap.
+ *
+ * Newly created tasks are matched against the MockTest collection via
+ * findMatchingMockTest and get an explicit `mockTest` ref when a match
+ * is found. Existing tasks (the `alreadyExists` / repair branch) are
+ * left untouched — they keep relying on mockAutomation.js's fuzzy
+ * fallback match, exactly as before this change.
  */
 async function generateTasksForRoadmap(roadmap, goal) {
   let modified = false;
@@ -113,6 +160,8 @@ async function generateTasksForRoadmap(roadmap, goal) {
       continue;
     }
 
+    const matchedMockTest = await findMatchingMockTest(milestone.title);
+
     const task = await Task.create({
       user:      roadmap.user,
       title:     milestone.title,
@@ -120,11 +169,17 @@ async function generateTasksForRoadmap(roadmap, goal) {
       roadmap:   roadmap._id,
       milestone: milestone._id,
       source:    'roadmap-generated',
+      mockTest:  matchedMockTest ? matchedMockTest._id : null,
     });
 
     milestone.tasks.push(task._id);
     modified = true;
-    console.log(`[Automation] Task Generated — taskId=${task._id} milestone="${milestone.title}"`);
+
+    if (matchedMockTest) {
+      console.log(`[Automation] Task Generated — taskId=${task._id} milestone="${milestone.title}" mockTest="${matchedMockTest.title}"`);
+    } else {
+      console.log(`[Automation] Task Generated — taskId=${task._id} milestone="${milestone.title}" (no mock test match — will use fallback matching)`);
+    }
   }
 
   if (modified) await roadmap.save();

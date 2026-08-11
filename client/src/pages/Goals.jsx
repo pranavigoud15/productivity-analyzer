@@ -1,27 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, CheckCircle2, CalendarDays, Trash2, X, Loader2 } from 'lucide-react';
+import { Plus, CalendarDays, Trash2, X, Loader2 } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
+import ContextAI from '../components/assistant/ContextAI';
 
-function GoalCard({ goal, isPending, onComplete, onDelete, onProgressChange }) {
+function GoalCard({ goal, isPending, onDelete }) {
   const isCompleted = goal.status === 'completed';
   const savedProgress = Math.min(100, Math.max(0, Number(goal.progress) || 0));
-
-  const [sliderValue, setSliderValue] = useState(savedProgress);
-
-  useEffect(() => {
-    setSliderValue(savedProgress);
-  }, [savedProgress]);
 
   const formattedDate = goal.targetDate
     ? new Date(goal.targetDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
-
-  const commitProgress = () => {
-    if (sliderValue !== savedProgress) {
-      onProgressChange(goal, sliderValue);
-    }
-  };
 
   return (
     <li className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
@@ -45,11 +34,11 @@ function GoalCard({ goal, isPending, onComplete, onDelete, onProgressChange }) {
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div
             className={`h-full rounded-full transition-all ${isCompleted ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-            style={{ width: `${sliderValue}%` }}
+            style={{ width: `${savedProgress}%` }}
           />
         </div>
         <div className="mt-1.5 flex items-center justify-between text-xs text-slate-400">
-          <span>{sliderValue}% complete</span>
+          <span>{savedProgress}% complete</span>
           {formattedDate && (
             <span className="flex items-center gap-1">
               <CalendarDays className="h-3 w-3" />
@@ -57,35 +46,9 @@ function GoalCard({ goal, isPending, onComplete, onDelete, onProgressChange }) {
             </span>
           )}
         </div>
-
-        {!isCompleted && (
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={5}
-            value={sliderValue}
-            disabled={isPending}
-            onChange={(e) => setSliderValue(Number(e.target.value))}
-            onMouseUp={commitProgress}
-            onTouchEnd={commitProgress}
-            aria-label="Update goal progress"
-            className="mt-2 w-full accent-indigo-600 disabled:opacity-50"
-          />
-        )}
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        {!isCompleted && (
-          <button
-            onClick={() => onComplete(goal)}
-            disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Mark Complete
-          </button>
-        )}
         <button
           onClick={() => onDelete(goal)}
           disabled={isPending}
@@ -95,6 +58,18 @@ function GoalCard({ goal, isPending, onComplete, onDelete, onProgressChange }) {
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
+
+      <ContextAI
+        module="goals"
+        context={{
+          title: goal.title,
+          description: goal.description,
+          status: goal.status,
+          progress: goal.progress,
+          targetDate: goal.targetDate,
+        }}
+        title={goal.title}
+      />
     </li>
   );
 }
@@ -231,34 +206,6 @@ export default function Goals() {
     });
   };
 
-  const handleCompleteGoal = async (goal) => {
-    const id = goal._id || goal.id;
-    setGoalPending(id, true);
-    try {
-      const res = await API.patch(`/goals/${id}/complete`, {}, { headers: getAuthHeaders() });
-      const updated = res.data;
-      setGoals((prev) => prev.map((g) => ((g._id || g.id) === id ? updated : g)));
-    } catch (err) {
-      setLoadError('Could not mark that goal complete. Please try again.');
-    } finally {
-      setGoalPending(id, false);
-    }
-  };
-
-  const handleUpdateGoalProgress = async (goal, progress) => {
-    const id = goal._id || goal.id;
-    setGoalPending(id, true);
-    try {
-      const res = await API.patch(`/goals/${id}`, { progress }, { headers: getAuthHeaders() });
-      const updated = res.data;
-      setGoals((prev) => prev.map((g) => ((g._id || g.id) === id ? updated : g)));
-    } catch (err) {
-      setLoadError('Could not update goal progress. Please try again.');
-    } finally {
-      setGoalPending(id, false);
-    }
-  };
-
   // Note: deleting a goal also cascade-deletes its roadmap and
   // roadmap-generated tasks on the backend (unchanged). This page only
   // filters its own `goals` state — Roadmaps/Tasks reflect the deletion
@@ -332,9 +279,7 @@ export default function Goals() {
                   key={goal._id || goal.id}
                   goal={goal}
                   isPending={pendingGoalIds.has(goal._id || goal.id)}
-                  onComplete={handleCompleteGoal}
                   onDelete={handleDeleteGoal}
-                  onProgressChange={handleUpdateGoalProgress}
                 />
               ))}
             </ul>

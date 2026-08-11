@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, X, Loader2, Pin, PinOff, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
+import ContextAI from '../components/assistant/ContextAI';
 
 function NoteCard({ note, isPending, onTogglePinned, onDelete }) {
   return (
@@ -41,6 +42,12 @@ function NoteCard({ note, isPending, onTogglePinned, onDelete }) {
           ))}
         </div>
       )}
+
+      <ContextAI
+        module="notes"
+        context={{ title: note.title, content: note.content, tags: note.tags }}
+        title={note.title}
+      />
     </li>
   );
 }

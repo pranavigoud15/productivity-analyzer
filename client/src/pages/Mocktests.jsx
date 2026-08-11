@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
+import ContextAI from '../components/assistant/ContextAI';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -305,6 +306,22 @@ function ResultsView({ attempt, onRetry, onBack }) {
           </div>
         ))}
       </div>
+
+      <ContextAI
+        module="mocktests"
+        context={{
+          title: attempt.title,
+          percentage: attempt.percentage,
+          score: attempt.score,
+          totalQuestions: attempt.totalQuestions,
+          correctCount: attempt.correctCount,
+          incorrectCount: attempt.incorrectCount,
+          unansweredCount: attempt.unansweredCount,
+          difficulty: attempt.difficulty,
+          timeTakenSeconds: attempt.timeTakenSeconds,
+        }}
+        title={attempt.title}
+      />
 
       {/* Answer review toggle */}
       <button

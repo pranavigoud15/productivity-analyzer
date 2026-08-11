@@ -46,13 +46,16 @@ exports.getGoals = async (req, res) => {
   }
 };
 
-// @desc   Update a goal's title, description, targetDate, or progress.
-//         Does NOT accept `status` — completion is handled exclusively
-//         by completeGoal below.
+// @desc   Update a goal's title, description, or targetDate.
+//         Does NOT accept `status` or `progress` — both are automation-
+//         only fields now. `progress` is written exclusively by
+//         roadmapAutomation.cascadeToGoal as part of the Task → Milestone
+//         → Roadmap → Goal cascade; `status`/`completedAt` transition
+//         only inside that same cascade. Neither is settable here.
 // @route  PATCH /api/goals/:id
 exports.updateGoal = async (req, res) => {
   try {
-    const { title, description, targetDate, progress } = req.body;
+    const { title, description, targetDate } = req.body;
     const goal = await Goal.findOne({ _id: req.params.id, user: req.user.id });
 
     if (!goal) {
@@ -67,13 +70,6 @@ exports.updateGoal = async (req, res) => {
     }
     if (description !== undefined) goal.description = description.trim();
     if (targetDate   !== undefined) goal.targetDate  = targetDate;
-    if (progress     !== undefined) {
-      const clamped = Math.min(100, Math.max(0, Number(progress)));
-      if (Number.isNaN(clamped)) {
-        return res.status(400).json({ message: 'Progress must be a number' });
-      }
-      goal.progress = clamped;
-    }
 
     await goal.save();
     res.status(200).json(goal);
@@ -82,26 +78,17 @@ exports.updateGoal = async (req, res) => {
   }
 };
 
-// @desc   Mark a goal complete. Sets status, progress to 100, and
-//         completedAt — the single place this transition happens.
+// @desc   Manual goal completion is disabled. Goals are completed
+//         exclusively through the automation cascade — when all roadmap
+//         milestones reach 'completed', roadmapAutomation.cascadeToGoal
+//         sets status/progress/completedAt automatically. This route is
+//         kept (rather than removed) so existing clients get a clear
+//         403 instead of a 404, but it performs no mutation.
 // @route  PATCH /api/goals/:id/complete
 exports.completeGoal = async (req, res) => {
-  try {
-    const goal = await Goal.findOne({ _id: req.params.id, user: req.user.id });
-
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal not found' });
-    }
-
-    goal.status      = 'completed';
-    goal.progress    = 100;
-    goal.completedAt = new Date();
-
-    await goal.save();
-    res.status(200).json(goal);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to mark goal complete' });
-  }
+  return res.status(403).json({
+    message: 'Goal completion is automatic once all roadmap milestones are met.',
+  });
 };
 
 // @desc   Delete a goal, its linked roadmap, and all roadmap-generated
