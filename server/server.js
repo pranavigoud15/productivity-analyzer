@@ -5,7 +5,6 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-console.log("GEMINI_API_KEY:", process.env.GEMINI_API_KEY);
 const authRoutes = require("./routes/authRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const taskRoutes = require("./routes/taskRoutes");
@@ -17,12 +16,16 @@ const mockTestRoutes = require("./routes/mockTestRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const insightsRoutes = require('./routes/insightsRoutes');
 const assistantRoutes = require("./routes/assistantRoutes");
+const adminRoutes = require('./routes/adminRoutes');
+const focusRoutes = require('./routes/focusRoutes');
 
 
 
 const app = express();
 
-app.use(cors());
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = (process.env.CLIENT_URL || (isProduction ? '' : 'http://localhost:5173,http://127.0.0.1:5173')).split(',').map(value => value.trim()).filter(Boolean);
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
 app.use(express.json());
 
 // Routes
@@ -37,6 +40,8 @@ app.use("/api/mock-tests", mockTestRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use('/api/insights', insightsRoutes);
 app.use("/api/assistant", assistantRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/focus', focusRoutes);
 
 // MongoDB Connection
 mongoose

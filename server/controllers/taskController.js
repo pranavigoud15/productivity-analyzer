@@ -88,7 +88,7 @@ exports.completeTask = async (req, res) => {
     await task.save();
 
     // Fire and forget — task response must not be blocked by cascade.
-    automation.onTaskCompleted(task).catch(err =>
+    if (task.completed) automation.onTaskCompleted(task).catch(err =>
       console.error('[Automation] onTaskCompleted error — taskId=', task._id, err)
     );
 

@@ -12,6 +12,21 @@ const taskSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // Optional for manual tasks; populated for generated learning tasks.
+    description: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    resources: {
+      type: [{
+        category: { type: String, enum: ['official', 'tutorial', 'video', 'practice', 'other'], required: true },
+        title: { type: String, required: true, trim: true },
+        url: { type: String, required: true, trim: true },
+        source: { type: String, default: 'brave' },
+      }],
+      default: [],
+    },
     completed: {
       type: Boolean,
       default: false,
@@ -45,6 +60,11 @@ const taskSchema = new mongoose.Schema(
       type: String,
       enum: ['manual', 'roadmap-generated'],
       default: 'manual',
+    },
+    mockTest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MockTest',
+      default: null,
     },
   },
   { timestamps: true }

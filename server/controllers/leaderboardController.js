@@ -6,9 +6,13 @@ exports.getLeaderboard = async (req, res) => {
 
     // Full ranked list (no limit — needed to find current user's rank)
     const all = await MockTestAttempt.aggregate([
+      // A user's retries for the same test are one legitimate activity.
+      // Keep their best result so retries cannot inflate rank or test count.
+      { $sort: { percentage: -1, completedAt: 1 } },
+      { $group: { _id: { user: '$user', mockTest: '$mockTest' }, percentage: { $first: '$percentage' } } },
       {
         $group: {
-          _id: '$user',
+          _id: '$_id.user',
           averagePercentage: { $avg: '$percentage' },
           bestPercentage: { $max: '$percentage' },
           testsCompleted: { $sum: 1 },

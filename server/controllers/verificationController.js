@@ -32,7 +32,8 @@ exports.startVerification = async (req, res) => {
       });
     }
 
-    const questions = await generateVerificationQuestions(task.title);
+    const taskContext = [task.description, ...(task.resources || []).map(resource => resource.title)].filter(Boolean).join('\n');
+    const questions = await generateVerificationQuestions(task.title, taskContext);
 
     const attempt = await TaskVerificationAttempt.create({
       task: task._id,

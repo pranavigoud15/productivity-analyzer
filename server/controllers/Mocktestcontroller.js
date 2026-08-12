@@ -397,7 +397,7 @@ const submitMockTest = async (req, res) => {
     });
 
     // Fire and forget — submit response must not be blocked by automation.
-    automation.onMockTestCompleted(req.user.id, attempt).catch(err =>
+    if (percentage >= test.passingPercentage) automation.onMockTestCompleted(req.user.id, attempt).catch(err =>
       console.error('[Automation] onMockTestCompleted error — attemptId=', attempt._id, err)
     );
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
 const {
   seedMockTests,
   getMockTests,
@@ -9,12 +10,12 @@ const {
   getUserAttempts,
   getAttemptById,
   getMockTestStats,
-} = require('../controllers/mockTestController');
+} = require('../controllers/Mocktestcontroller');
 
 router.use(authMiddleware);
 
 // Seed (dev only — remove or guard with admin middleware in production)
-router.post('/seed', seedMockTests);
+router.post('/seed', adminMiddleware, seedMockTests);
 
 // Tests
 router.get('/', getMockTests);

@@ -2,6 +2,7 @@ const Roadmap  = require('../models/Roadmap');
 const Task     = require('../models/Task');
 const Goal     = require('../models/Goal');
 const MockTest = require('../models/MockTest');
+const { searchResources } = require('../services/resourceSearchService');
 
 // ── Curricula (moved from roadmapController — single source of truth) ────────
 
@@ -170,6 +171,7 @@ async function generateTasksForRoadmap(roadmap, goal) {
       milestone: milestone._id,
       source:    'roadmap-generated',
       mockTest:  matchedMockTest ? matchedMockTest._id : null,
+      description: milestone.description || `Learn and apply ${milestone.title.replace(/^Week \d+:\s*/i, '')}.`,
     });
 
     milestone.tasks.push(task._id);
@@ -180,6 +182,11 @@ async function generateTasksForRoadmap(roadmap, goal) {
     } else {
       console.log(`[Automation] Task Generated — taskId=${task._id} milestone="${milestone.title}" (no mock test match — will use fallback matching)`);
     }
+
+    // Resource discovery must never delay or prevent roadmap creation.
+    searchResources(task.title).then(async (resources) => {
+      if (resources.length) await Task.updateOne({ _id: task._id, completed: false }, { $set: { resources } });
+    }).catch((err) => console.warn(`[Resources] Generation failed for taskId=${task._id}: ${err.message}`));
   }
 
   if (modified) await roadmap.save();

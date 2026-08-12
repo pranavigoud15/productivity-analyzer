@@ -6,8 +6,12 @@ const jwt = require("jsonwebtoken");
 const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    if (!name?.trim() || !email?.trim() || !password || password.length < 8) {
+      return res.status(400).json({ success: false, message: 'Name, valid email, and a password of at least 8 characters are required.' });
+    }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       return res.status(400).json({
@@ -20,7 +24,7 @@ const signup = async (req, res) => {
 
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
     });
 
@@ -43,7 +47,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email?.trim().toLowerCase() });
 
     if (!user) {
       return res.status(400).json({
@@ -68,6 +72,7 @@ const login = async (req, res) => {
       {
         id: user._id,
         email: user.email,
+        role: user.role,
       },
       process.env.JWT_SECRET,
       {
@@ -83,6 +88,7 @@ const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
