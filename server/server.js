@@ -24,8 +24,19 @@ const focusRoutes = require('./routes/focusRoutes');
 const app = express();
 
 const isProduction = process.env.NODE_ENV === 'production';
-const allowedOrigins = (process.env.CLIENT_URL || (isProduction ? '' : 'http://localhost:5173,http://127.0.0.1:5173')).split(',').map(value => value.trim()).filter(Boolean);
-app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
+const defaultOrigins = isProduction
+  ? 'https://productivity-analyzer-two.vercel.app'
+  : 'http://localhost:5173,http://127.0.0.1:5173';
+const allowedOrigins = (process.env.CLIENT_URL || defaultOrigins)
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 // Routes
