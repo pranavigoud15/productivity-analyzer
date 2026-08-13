@@ -7,7 +7,7 @@ import Roadmaps from './pages/Roadmaps';
 import Tasks from './pages/Tasks';
 import Journals from './pages/Journals';
 import Notes from './pages/Notes';
-import MockTests from './pages/MockTests';
+import MockTests from './pages/Mocktests';
 import FocusMode from './pages/FocusMode';
 import Layout from './layouts/Layout';
 import { FocusProvider } from './context/FocusContext';
