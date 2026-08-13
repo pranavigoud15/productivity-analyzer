@@ -1,9 +1,9 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
-build/
+# Build output (repo root only; client/dist is produced by Vite on Vercel)
+/dist/
+/build/
 
 # Environment files (never commit secrets)
 .env
