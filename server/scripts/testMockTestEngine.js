@@ -176,7 +176,8 @@ console.log('\n=== Mock Test engine regression tests ===\n');
 console.log('Question count normalisation');
 assert(normaliseQuestionCount(10) === 10, 'accepts valid question count');
 assert(normaliseQuestionCount(4) === 5, 'enforces minimum question count');
-assert(normaliseQuestionCount(99) === 20, 'enforces maximum question count');
+assert(normaliseQuestionCount(99) === 30, 'enforces maximum question count');
+assert(normaliseQuestionCount(30) === 30, 'accepts 30 questions');
 
 console.log('\nCross-domain assessment scope');
 for (const domainCase of DOMAIN_CASES) {
@@ -188,7 +189,8 @@ for (const domainCase of DOMAIN_CASES) {
 
 console.log('\nQuestion validation and count');
 const fiveQuestions = Array.from({ length: 5 }, (_, index) => makeQuestion(index + 1));
-assert(validateMockQuestions(fiveQuestions, 5) === true, 'accepts exactly 5 valid questions');
+assert(validateMockQuestions(fiveQuestions, 5).length === 5, 'accepts exactly 5 valid questions');
+assert(validateMockQuestions([...fiveQuestions, makeQuestion(6)], 5).length === 5, 'trims excess questions to expected count');
 try {
   validateMockQuestions(fiveQuestions.slice(0, 4), 5);
   assert(false, 'rejects fewer than expected questions');

@@ -8,8 +8,10 @@ async function callGemini({ systemPrompt, userMessage }) {
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model,
     contents: userMessage,
     config: {
       systemInstruction: systemPrompt,
@@ -25,10 +27,12 @@ async function callGemini({ systemPrompt, userMessage }) {
     },
   });
 
-  const parsed = JSON.parse(response.text());
+  const rawText = typeof response.text === "function" ? response.text() : response.text;
+  const parsed = JSON.parse(rawText);
   return {
     success: true,
     provider: "gemini",
+    model,
     reply: parsed.reply,
     suggestions: Array.isArray(parsed.suggestions)
       ? parsed.suggestions.slice(0, 3)

@@ -66,6 +66,22 @@ const taskSchema = new mongoose.Schema(
       ref: 'MockTest',
       default: null,
     },
+    learningGuide: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    enrichmentStatus: {
+      type: String,
+      enum: ['pending', 'processing', 'completed', 'failed'],
+    },
+    enrichmentMetadata: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    enrichmentError: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

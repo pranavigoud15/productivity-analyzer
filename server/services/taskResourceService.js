@@ -35,7 +35,7 @@ function needsResourceRematch(task) {
 }
 
 function needsEnrichment(task) {
-  if (!task) return false;
+  if (!task || task.source !== 'roadmap-generated') return false;
 
   if (task.enrichmentStatus === 'processing') {
     return isProcessingStale(task);
@@ -57,7 +57,7 @@ function needsEnrichment(task) {
 }
 
 function needsFullEnrichment(task) {
-  if (!task) return false;
+  if (!task || task.source !== 'roadmap-generated') return false;
   if (task.enrichmentStatus === 'processing') return isProcessingStale(task);
   if (!task.enrichmentStatus || task.enrichmentStatus === 'pending' || task.enrichmentStatus === 'failed') {
     return true;

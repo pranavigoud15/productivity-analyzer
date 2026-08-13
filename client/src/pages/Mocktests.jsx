@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ClipboardList,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock,
   CheckCircle2,
   XCircle,
@@ -12,6 +14,8 @@ import {
   RotateCcw,
   AlertTriangle,
   BookOpen,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
@@ -19,11 +23,62 @@ import ContextAI from '../components/assistant/ContextAI';
 import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
 
+const QUESTION_COUNTS = [5, 10, 15, 30];
+const DIFFICULTY_OPTIONS = ['Adaptive', 'Easy', 'Medium', 'Hard'];
+
 const DIFFICULTY_COLORS = {
   Easy: 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]',
   Medium: 'bg-[var(--pa-accent-warning)]/10 text-[var(--pa-accent-warning)]',
   Hard: 'bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]',
 };
+
+function SelectorGroup({ label, options, value, onChange }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onChange(option)}
+            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+              value === option
+                ? 'bg-accent-violet text-white'
+                : 'bg-surface-secondary text-secondary hover:bg-accent-violet-soft accent-violet'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AttemptHistoryRow({ attempt, onOpen }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen?.(attempt)}
+      className="flex w-full items-center justify-between rounded-xl border border-subtle bg-surface-secondary p-3 text-left transition hover:border-default hover:bg-hover"
+    >
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-primary">{attempt.title}</p>
+        <p className="mt-0.5 text-xs text-muted">
+          {new Date(attempt.completedAt).toLocaleDateString()} · {attempt.difficulty} · {attempt.correctCount}/{attempt.totalQuestions} correct
+        </p>
+      </div>
+      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+        attempt.percentage >= 60
+          ? 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]'
+          : 'bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]'
+      }`}>
+        {attempt.percentage}%
+      </span>
+    </button>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -493,61 +548,82 @@ function HistoryView({ test, onBack, onStart }) {
 // ---------------------------------------------------------------------------
 export default function MockTests() {
   const VIEW = { LIST: 'list', TEST: 'test', RESULTS: 'results', HISTORY: 'history' };
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pendingStartTestId = searchParams.get('startTestId');
+  const autoStartHandled = useRef(false);
 
   const [view, setView] = useState(VIEW.LIST);
-  const [tests, setTests] = useState([]);
+  const [roadmapTests, setRoadmapTests] = useState([]);
+  const [dailyTests, setDailyTests] = useState([]);
+  const [sampleTests, setSampleTests] = useState([]);
   const [statsMap, setStatsMap] = useState({});
-  const [activeTest, setActiveTest] = useState(null);       // full test with questions
-  const [activeTestMeta, setActiveTestMeta] = useState(null); // list-level test object
+  const [recentAttempts, setRecentAttempts] = useState([]);
+  const [activeTest, setActiveTest] = useState(null);
+  const [activeTestMeta, setActiveTestMeta] = useState(null);
   const [latestAttempt, setLatestAttempt] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isCreatingDaily, setIsCreatingDaily] = useState(false);
+  const [questionCount, setQuestionCount] = useState(10);
+  const [difficulty, setDifficulty] = useState('Adaptive');
+  const [showSampleTests, setShowSampleTests] = useState(false);
   const [filterSubject, setFilterSubject] = useState('All');
   const [filterDifficulty, setFilterDifficulty] = useState('All');
+
+  const loadStatsForTests = useCallback(async (list) => {
+    if (!list.length) {
+      setStatsMap({});
+      return;
+    }
+    const statResults = await Promise.allSettled(
+      list.map((t) => API.get(`/mock-tests/${t._id}/stats`, { headers: getAuthHeaders() }))
+    );
+    const map = {};
+    list.forEach((t, i) => {
+      if (statResults[i].status === 'fulfilled') {
+        map[t._id] = statResults[i].value.data;
+      }
+    });
+    setStatsMap(map);
+  }, []);
+
+  const fetchRecentAttempts = useCallback(async () => {
+    try {
+      const res = await API.get('/mock-tests/attempts', { headers: getAuthHeaders() });
+      const list = Array.isArray(res.data) ? res.data : [];
+      setRecentAttempts(list.slice(0, 8));
+    } catch {
+      setRecentAttempts([]);
+    }
+  }, []);
 
   const fetchTests = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
     try {
       const res = await API.get('/mock-tests', { headers: getAuthHeaders() });
-      const list = Array.isArray(res.data) ? res.data : [];
-      setTests(list);
-      // Fetch per-test stats in parallel (lightweight queries)
-      const statResults = await Promise.allSettled(
-        list.map((t) => API.get(`/mock-tests/${t._id}/stats`, { headers: getAuthHeaders() }))
-      );
-      const map = {};
-      list.forEach((t, i) => {
-        if (statResults[i].status === 'fulfilled') {
-          map[t._id] = statResults[i].value.data;
-        }
-      });
-      setStatsMap(map);
+      const data = res.data || {};
+      const roadmap = data.roadmapVerification || [];
+      const daily = data.dailyAssessments || [];
+      const samples = data.sampleTests || [];
+      setRoadmapTests(roadmap);
+      setDailyTests(daily);
+      setSampleTests(samples);
+      await loadStatsForTests([...roadmap, ...daily, ...samples]);
+      await fetchRecentAttempts();
     } catch (err) {
       if (err.response?.status === 401) { clearAuthAndRedirect(); return; }
       setLoadError('Could not load mock tests. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadStatsForTests, fetchRecentAttempts]);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { clearAuthAndRedirect(); return; }
     fetchTests();
   }, [fetchTests]);
-
-  const handleSeed = async () => {
-    setIsSeeding(true);
-    try {
-      await API.post('/mock-tests/seed', {}, { headers: getAuthHeaders() });
-      await fetchTests();
-    } catch {
-      setLoadError('Seed failed.');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const handleStartTest = async (testMeta) => {
     try {
@@ -555,10 +631,78 @@ export default function MockTests() {
       setActiveTest(res.data);
       setActiveTestMeta(testMeta);
       setView(VIEW.TEST);
-    } catch {
-      setLoadError('Could not load test. Please try again.');
+      if (searchParams.get('startTestId')) {
+        setSearchParams({});
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || 'Could not load test. Please try again.';
+      setLoadError(message);
     }
   };
+
+  const handleStartDailyAssessment = async () => {
+    setIsCreatingDaily(true);
+    setLoadError('');
+    try {
+      const res = await API.post(
+        '/mock-tests/daily-assessment',
+        { questionCount, difficulty },
+        { headers: getAuthHeaders() }
+      );
+      const created = res.data.test;
+      await fetchTests();
+      await handleStartTest(created);
+    } catch (err) {
+      const message = err.response?.data?.message || 'Could not create daily assessment.';
+      setLoadError(message);
+    } finally {
+      setIsCreatingDaily(false);
+    }
+  };
+
+  const handleOpenAttempt = async (attempt) => {
+    try {
+      const res = await API.get(`/mock-tests/attempts/${attempt._id}`, { headers: getAuthHeaders() });
+      setLatestAttempt(res.data);
+      setActiveTestMeta({ _id: attempt.mockTest, title: attempt.title });
+      setView(VIEW.RESULTS);
+    } catch {
+      setLoadError('Could not load attempt details.');
+    }
+  };
+  const handleSeed = async () => {
+    setIsSeeding(true);
+    try {
+      await API.post('/mock-tests/seed', {}, { headers: getAuthHeaders() });
+      await fetchTests();
+      setShowSampleTests(true);
+    } catch {
+      setLoadError('Seed failed.');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!pendingStartTestId || isLoading || autoStartHandled.current) return;
+    const listed = [...roadmapTests, ...dailyTests, ...sampleTests];
+    const testMeta = listed.find((t) => String(t._id) === String(pendingStartTestId));
+    if (!testMeta) return;
+    autoStartHandled.current = true;
+
+    (async () => {
+      try {
+        const res = await API.get(`/mock-tests/${testMeta._id}`, { headers: getAuthHeaders() });
+        setActiveTest(res.data);
+        setActiveTestMeta(testMeta);
+        setView(VIEW.TEST);
+        setSearchParams({});
+      } catch (err) {
+        const message = err.response?.data?.message || 'Could not load test. Please try again.';
+        setLoadError(message);
+      }
+    })();
+  }, [pendingStartTestId, isLoading, roadmapTests, dailyTests, sampleTests, setSearchParams]);
 
   const handleSubmit = async ({ answers, startedAt, timeTakenSeconds }) => {
     try {
@@ -575,14 +719,14 @@ export default function MockTests() {
     }
   };
 
-  const subjects = ['All', ...new Set(tests.map((t) => t.subject))];
-  const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
-
-  const filteredTests = tests.filter((t) => {
+  const filteredSampleTests = sampleTests.filter((t) => {
     const subjectOk = filterSubject === 'All' || t.subject === filterSubject;
     const diffOk = filterDifficulty === 'All' || t.difficulty === filterDifficulty;
     return subjectOk && diffOk;
   });
+
+  const sampleSubjects = ['All', ...new Set(sampleTests.map((t) => t.subject))];
+  const sampleDifficulties = ['All', 'Easy', 'Medium', 'Hard'];
 
   // ---- ACTIVE TEST VIEW ----
   if (view === VIEW.TEST && activeTest) {
@@ -636,18 +780,7 @@ export default function MockTests() {
     <>
       <PageHeader
         title="Mock Tests"
-        description={`${tests.length} test${tests.length === 1 ? '' : 's'} available`}
-        actions={
-          tests.length === 0 ? (
-            <button
-              onClick={handleSeed}
-              disabled={isSeeding}
-              className="pa-btn-primary flex items-center gap-2 px-4 py-2 text-sm font-semibold disabled:opacity-60"
-            >
-              {isSeeding ? 'Loading…' : 'Load Sample Tests'}
-            </button>
-          ) : null
-        }
+        description="Daily assessments from your tasks · roadmap verification tests"
       />
 
       {loadError && (
@@ -659,62 +792,155 @@ export default function MockTests() {
         </div>
       )}
 
-      {/* Filters */}
-      {tests.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <div className="flex flex-wrap gap-1.5">
-            {subjects.map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterSubject(s)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterSubject === s ? 'bg-accent-violet text-white' : 'bg-surface-secondary text-secondary hover:bg-accent-violet-soft accent-violet'}`}
-              >
-                {s}
-              </button>
-            ))}
+      <section className="pa-card p-6">
+        <div className="flex items-start gap-3">
+          <div className="rounded-xl bg-accent-violet-soft p-2.5">
+            <Sparkles className="h-5 w-5 accent-violet" />
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {difficulties.map((d) => (
-              <button
-                key={d}
-                onClick={() => setFilterDifficulty(d)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterDifficulty === d ? 'bg-accent-violet text-white' : 'bg-surface-secondary text-secondary hover:bg-accent-violet-soft accent-violet'}`}
-              >
-                {d}
-              </button>
-            ))}
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-primary">Daily Assessment</h2>
+            <p className="mt-1 text-sm text-secondary">
+              Generate a personalized test from your goals, tasks, learning guides, resources, and notes.
+            </p>
           </div>
         </div>
-      )}
 
-      {/* Test grid */}
-      {filteredTests.length === 0 && tests.length > 0 ? (
-        <p className="py-8 text-center text-sm text-muted">No tests match the selected filters.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredTests.map((t) => (
-            <TestCard
-              key={t._id}
-              test={t}
-              stats={statsMap[t._id]}
-              onStart={handleStartTest}
-              onHistory={(test) => { setActiveTestMeta(test); setView(VIEW.HISTORY); }}
-            />
-          ))}
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          <SelectorGroup
+            label="Questions"
+            options={QUESTION_COUNTS}
+            value={questionCount}
+            onChange={setQuestionCount}
+          />
+          <SelectorGroup
+            label="Difficulty"
+            options={DIFFICULTY_OPTIONS}
+            value={difficulty}
+            onChange={setDifficulty}
+          />
         </div>
+
+        <button
+          type="button"
+          onClick={handleStartDailyAssessment}
+          disabled={isCreatingDaily}
+          className="mt-5 pa-btn-primary flex w-full items-center justify-center gap-2 py-2.5 text-sm font-semibold disabled:opacity-60 sm:w-auto sm:px-6"
+        >
+          {isCreatingDaily ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {isCreatingDaily ? 'Generating assessment…' : 'Start Daily Assessment'}
+        </button>
+      </section>
+
+      {roadmapTests.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold text-primary">Roadmap Verification Tests</h2>
+            <p className="mt-1 text-sm text-secondary">Week-specific verification tests linked to your learning roadmap.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {roadmapTests.map((t) => (
+              <TestCard
+                key={t._id}
+                test={t}
+                stats={statsMap[t._id]}
+                onStart={handleStartTest}
+                onHistory={(test) => { setActiveTestMeta(test); setView(VIEW.HISTORY); }}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
-      {tests.length === 0 && !isLoading && !loadError && (
-        <EmptyState
-          icon={ClipboardList}
-          title="No mock tests yet"
-          description='Click "Load Sample Tests" to add pre-built tests.'
-          action={
-            <button type="button" onClick={handleSeed} disabled={isSeeding} className="pa-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60">
-              {isSeeding ? 'Loading…' : 'Load Sample Tests'}
-            </button>
-          }
-        />
+      {recentAttempts.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold text-primary">Recent Assessment History</h2>
+            <p className="mt-1 text-sm text-secondary">Your latest mock test attempts.</p>
+          </div>
+          <div className="space-y-2">
+            {recentAttempts.map((attempt) => (
+              <AttemptHistoryRow key={attempt._id} attempt={attempt} onOpen={handleOpenAttempt} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {(sampleTests.length > 0 || !roadmapTests.length) && (
+        <section className="space-y-4">
+          <button
+            type="button"
+            onClick={() => setShowSampleTests((prev) => !prev)}
+            className="flex w-full items-center justify-between rounded-xl border border-subtle bg-surface-secondary px-4 py-3 text-left"
+          >
+            <div>
+              <h2 className="text-sm font-bold text-primary">Sample / Demo Tests</h2>
+              <p className="mt-0.5 text-xs text-muted">Optional pre-built subject tests for practice.</p>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-muted transition-transform ${showSampleTests ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showSampleTests && (
+            <>
+              {sampleTests.length === 0 ? (
+                <EmptyState
+                  icon={ClipboardList}
+                  title="No sample tests loaded"
+                  description="Load demo tests for optional practice."
+                  action={
+                    <button type="button" onClick={handleSeed} disabled={isSeeding} className="pa-btn-secondary px-4 py-2 text-sm font-medium disabled:opacity-60">
+                      {isSeeding ? 'Loading…' : 'Load Sample Tests'}
+                    </button>
+                  }
+                />
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {sampleSubjects.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setFilterSubject(s)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterSubject === s ? 'bg-accent-violet text-white' : 'bg-surface-secondary text-secondary hover:bg-accent-violet-soft accent-violet'}`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sampleDifficulties.map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => setFilterDifficulty(d)}
+                          className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterDifficulty === d ? 'bg-accent-violet text-white' : 'bg-surface-secondary text-secondary hover:bg-accent-violet-soft accent-violet'}`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {filteredSampleTests.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-muted">No sample tests match the selected filters.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredSampleTests.map((t) => (
+                        <TestCard
+                          key={t._id}
+                          test={t}
+                          stats={statsMap[t._id]}
+                          onStart={handleStartTest}
+                          onHistory={(test) => { setActiveTestMeta(test); setView(VIEW.HISTORY); }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </section>
       )}
     </>
   );

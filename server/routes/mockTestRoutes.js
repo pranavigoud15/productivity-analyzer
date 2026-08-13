@@ -5,6 +5,7 @@ const adminMiddleware = require('../middleware/adminMiddleware');
 const {
   seedMockTests,
   getMockTests,
+  createDailyAssessmentHandler,
   getMockTestById,
   submitMockTest,
   getUserAttempts,
@@ -19,6 +20,7 @@ router.post('/seed', adminMiddleware, seedMockTests);
 
 // Tests
 router.get('/', getMockTests);
+router.post('/daily-assessment', createDailyAssessmentHandler);
 router.get('/attempts', getUserAttempts);
 router.get('/attempts/:attemptId', getAttemptById);
 router.get('/:id', getMockTestById);

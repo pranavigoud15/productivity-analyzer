@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const {
   createTask,
   getTasks,
+  getTaskById,
   updateTask,
   completeTask,
   deleteTask,
@@ -18,7 +19,7 @@ const {
 router.use(authMiddleware);
 
 router.route('/').post(createTask).get(getTasks);
-router.route('/:id').patch(updateTask).delete(deleteTask);
+router.route('/:id').get(getTaskById).patch(updateTask).delete(deleteTask);
 router.patch('/:id/complete', completeTask);
 
 router.post('/:id/verify/start', startVerification);

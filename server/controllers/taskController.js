@@ -1,5 +1,12 @@
 const Task       = require('../models/Task');
 const automation = require('../automation/automationService');
+const { scheduleTaskEnrichment, needsEnrichment } = require('../services/taskResourceService');
+const { loadTaskEnrichmentContext } = require('../services/taskContextService');
+const { ensureMockTestForMilestone } = require('../services/roadmapMockTestService');
+const {
+  resolveVerificationUiState,
+  hasLinkedMockTest,
+} = require('../utils/taskVerificationState');
 
 // @desc   Create a manual task
 // @route  POST /api/tasks
@@ -26,10 +33,66 @@ exports.createTask = async (req, res) => {
 // @route  GET /api/tasks
 exports.getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: 1 });
+    const tasks = await Task.find({ user: req.user.id })
+      .populate('mockTest', 'title generationStatus isPublished')
+      .sort({ createdAt: 1 });
+
+    for (const task of tasks) {
+      if (needsEnrichment(task)) {
+        scheduleTaskEnrichment(task._id);
+      }
+    }
+
     res.status(200).json(tasks);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch tasks' });
+  }
+};
+
+// @desc   Get a single task with learning content and verification state
+// @route  GET /api/tasks/:id
+exports.getTaskById = async (req, res) => {
+  try {
+    let task = await Task.findOne({ _id: req.params.id, user: req.user.id })
+      .populate('mockTest', 'title subject topic difficulty generationStatus isPublished durationMinutes passingPercentage source');
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (needsEnrichment(task)) {
+      scheduleTaskEnrichment(task._id);
+    }
+
+    if (task.source === 'roadmap-generated' && task.roadmap && task.milestone) {
+      const linkedMock = task.mockTest;
+      const hasRoadmapMock = linkedMock
+        && typeof linkedMock === 'object'
+        && linkedMock.source === 'roadmap-generated';
+
+      if (!hasRoadmapMock) {
+        loadTaskEnrichmentContext(task._id)
+          .then((context) => {
+            if (context?.roadmap && context?.milestone) {
+              return ensureMockTestForMilestone(context);
+            }
+            return null;
+          })
+          .catch((err) => {
+            console.warn(`[TaskController] Mock test backfill failed taskId=${task._id}: ${err.message}`);
+          });
+      }
+    }
+
+    const enrichmentLoading = needsEnrichment(task);
+    const verificationUiState = resolveVerificationUiState(task.toObject(), { enrichmentLoading });
+
+    res.status(200).json({
+      ...task.toObject(),
+      verificationUiState,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch task' });
   }
 };
 

@@ -43,6 +43,43 @@ const mockTestSchema = new mongoose.Schema(
     passingPercentage: { type: Number, default: 60, min: 0, max: 100 },
     // Future-ready: AI generation provenance, leaderboard eligibility.
     aiMetadata: { type: mongoose.Schema.Types.Mixed, default: null },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    goal: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Goal',
+      default: null,
+    },
+    roadmap: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Roadmap',
+      default: null,
+    },
+    milestone: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    task: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Task',
+      default: null,
+    },
+    source: {
+      type: String,
+      default: 'seed',
+    },
+    generationStatus: {
+      type: String,
+      enum: ['processing', 'completed', 'failed'],
+      default: 'completed',
+    },
+    generationError: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

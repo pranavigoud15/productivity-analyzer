@@ -20,6 +20,7 @@
 const roadmapAutomation = require('./roadmapAutomation');
 const taskAutomation    = require('./taskAutomation');
 const mockAutomation    = require('./mockAutomation');
+const { scheduleRoadmapMockTestGeneration } = require('../services/roadmapMockTestService');
 
 // ── Goal events ───────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ async function onGoalCreated(goal) {
   try {
     const roadmap = await roadmapAutomation.generateRoadmapForGoal(goal);
     await roadmapAutomation.generateTasksForRoadmap(roadmap, goal);
+    scheduleRoadmapMockTestGeneration(roadmap._id, goal);
   } catch (err) {
     console.error(`[Automation] onGoalCreated failed — goalId=${goal._id}`, err);
   }

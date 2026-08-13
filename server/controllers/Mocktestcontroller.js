@@ -1,6 +1,18 @@
 const MockTest        = require('../models/MockTest');
 const MockTestAttempt = require('../models/MockTestAttempt');
 const automation      = require('../automation/automationService');
+const {
+  listPublishedTestsForUser,
+  assertTestStartable,
+  sanitiseTestForClient,
+  scoreMockTestAttempt,
+  canUserAccessMockTest,
+} = require('../services/mockTestService');
+const {
+  createDailyAssessment,
+  buildAttemptInsights,
+  ALLOWED_QUESTION_COUNTS,
+} = require('../services/dailyAssessmentService');
 
 // Seed data — enough tests to demonstrate the full subject/difficulty
 // matrix. Questions are intentionally kept to 5 per test so the seed is
@@ -299,19 +311,63 @@ const seedMockTests = async (req, res) => {
   }
 };
 
-// @desc   Get all published mock tests (no questions in list — lighter payload)
+// @desc   Get published mock tests grouped by purpose
 // @route  GET /api/mock-tests
 const getMockTests = async (req, res) => {
   try {
-    const tests = await MockTest.find(
-      { isPublished: true },
-      '-questions'
-    ).sort({ subject: 1, difficulty: 1 });
+    const tests = await listPublishedTestsForUser(req.user.id);
 
-    res.status(200).json(tests);
+    const roadmapVerification = tests.filter((t) => t.source === 'roadmap-generated');
+    const dailyAssessments = tests.filter(
+      (t) => t.source === 'daily-task-assessment' && String(t.user) === String(req.user.id)
+    );
+    const sampleTests = tests.filter(
+      (t) => t.source !== 'roadmap-generated'
+        && t.source !== 'daily-task-assessment'
+        && (!t.user || t.source === 'seed' || !t.source)
+    );
+
+    res.status(200).json({
+      roadmapVerification,
+      dailyAssessments,
+      sampleTests,
+    });
   } catch (err) {
     console.error('GET MOCK TESTS ERROR:', err);
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @desc   Generate a personalized daily task assessment
+// @route  POST /api/mock-tests/daily-assessment
+const createDailyAssessmentHandler = async (req, res) => {
+  try {
+    const questionCount = Number(req.body?.questionCount);
+    const difficulty = req.body?.difficulty;
+
+    if (!ALLOWED_QUESTION_COUNTS.includes(questionCount)) {
+      return res.status(400).json({
+        message: 'questionCount must be one of: 5, 10, 15, 30.',
+      });
+    }
+
+    const result = await createDailyAssessment(req.user.id, { questionCount, difficulty });
+    const plain = result.test.toObject ? result.test.toObject() : result.test;
+
+    res.status(201).json({
+      test: {
+        ...plain,
+        totalQuestions: plain.questions?.length || 0,
+        questions: undefined,
+      },
+      resolvedDifficulty: result.resolvedDifficulty,
+      questionCount: result.questionCount,
+    });
+  } catch (err) {
+    console.error('CREATE DAILY ASSESSMENT ERROR:', err);
+    res.status(err.statusCode || 500).json({
+      message: err.message || 'Failed to create daily assessment.',
+    });
   }
 };
 
@@ -320,90 +376,74 @@ const getMockTests = async (req, res) => {
 const getMockTestById = async (req, res) => {
   try {
     const test = await MockTest.findById(req.params.id);
-    if (!test || !test.isPublished) {
+    if (!canUserAccessMockTest(test, req.user.id)) {
       return res.status(404).json({ message: 'Mock test not found.' });
     }
-    // Strip correctOption & explanation before sending to client
-    const sanitised = {
-      ...test.toObject(),
-      questions: test.questions.map((q) => ({
-        _id:          q._id,
-        questionText: q.questionText,
-        options:      q.options,
-      })),
-    };
-    res.status(200).json(sanitised);
+
+    assertTestStartable(test);
+    res.status(200).json(sanitiseTestForClient(test));
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch mock test.' });
+    res.status(err.statusCode || 500).json({
+      message: err.message || 'Failed to fetch mock test.',
+    });
   }
 };
 
-// @desc   Submit a completed mock test attempt. Fires onMockTestCompleted
-//         automation event which links the result to a roadmap task and
-//         cascades progress updates.
+// @desc   Submit a completed mock test attempt. Roadmap-linked tests may
+//         cascade progress when passing threshold is met.
 // @route  POST /api/mock-tests/:id/submit
 const submitMockTest = async (req, res) => {
   try {
     const { answers, startedAt, timeTakenSeconds } = req.body;
 
     const test = await MockTest.findById(req.params.id);
-    if (!test || !test.isPublished) {
+    if (!canUserAccessMockTest(test, req.user.id)) {
       return res.status(404).json({ message: 'Mock test not found.' });
     }
 
-    let correctCount   = 0;
-    let incorrectCount = 0;
-    let unansweredCount = 0;
+    assertTestStartable(test);
 
-    const questionResults = test.questions.map((q) => {
-      const id       = String(q._id);
-      const selected = answers[id] || null;
-      const isCorrect = selected === q.correctOption;
+    const scored = scoreMockTestAttempt(test, answers || {});
 
-      if (!selected)      unansweredCount++;
-      else if (isCorrect) correctCount++;
-      else                incorrectCount++;
-
-      return {
-        questionId:     q._id,
-        questionText:   q.questionText,
-        options:        q.options,
-        correctOption:  q.correctOption,
-        selectedOption: selected,
-        isCorrect,
-        explanation:    q.explanation || '',
-      };
-    });
-
-    const percentage = Math.round((correctCount / test.questions.length) * 10000) / 100;
-
-    const attempt = await MockTestAttempt.create({
+    const attemptPayload = {
       user:           req.user.id,
       mockTest:       test._id,
       subject:        test.subject,
       topic:          test.topic,
       difficulty:     test.difficulty,
       title:          test.title,
-      score:          correctCount,
-      totalQuestions: test.questions.length,
-      correctCount,
-      incorrectCount,
-      unansweredCount,
-      percentage,
+      score:          scored.score,
+      totalQuestions: scored.totalQuestions,
+      correctCount:   scored.correctCount,
+      incorrectCount: scored.incorrectCount,
+      unansweredCount: scored.unansweredCount,
+      percentage:     scored.percentage,
       startedAt:      new Date(startedAt),
       completedAt:    new Date(),
       timeTakenSeconds,
-      questionResults,
-    });
+      questionResults: scored.questionResults,
+    };
 
-    // Fire and forget — submit response must not be blocked by automation.
-    if (percentage >= test.passingPercentage) automation.onMockTestCompleted(req.user.id, attempt).catch(err =>
-      console.error('[Automation] onMockTestCompleted error — attemptId=', attempt._id, err)
-    );
+    if (test.source === 'daily-task-assessment') {
+      attemptPayload.aiInsights = buildAttemptInsights(scored.questionResults);
+    }
+
+    const attempt = await MockTestAttempt.create(attemptPayload);
+
+    if (
+      test.source === 'roadmap-generated'
+      && scored.percentage >= test.passingPercentage
+    ) {
+      automation.onMockTestCompleted(req.user.id, attempt).catch((err) =>
+        console.error('[Automation] onMockTestCompleted error — attemptId=', attempt._id, err)
+      );
+    }
 
     res.status(201).json(attempt);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to submit attempt.' });
+    res.status(err.statusCode || 500).json({
+      message: err.message || 'Failed to submit attempt.',
+    });
   }
 };
 
@@ -476,6 +516,7 @@ const getMockTestStats = async (req, res) => {
 module.exports = {
   seedMockTests,
   getMockTests,
+  createDailyAssessmentHandler,
   getMockTestById,
   submitMockTest,
   getUserAttempts,
