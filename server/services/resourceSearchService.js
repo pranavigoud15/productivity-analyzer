@@ -1,3 +1,5 @@
+const { discoverTaskResources } = require('./resourceDiscovery/discoveryService');
+
 const TRUSTED_DOMAINS = {
   official: ['react.dev', 'developer.mozilla.org', 'nodejs.org', 'expressjs.com', 'mongodb.com', 'python.org', 'docs.oracle.com', 'learn.microsoft.com', 'npmjs.com'],
   tutorial: ['freecodecamp.org', 'javascript.info', 'digitalocean.com', 'dev.to', 'geeksforgeeks.org', 'w3schools.com', 'baeldung.com'],
@@ -36,4 +38,54 @@ async function searchResources(topic) {
   }, []);
 }
 
-module.exports = { searchResources };
+function cleanTopic(value) {
+  return String(value || '').replace(/^Week \d+:\s*/i, '').trim();
+}
+
+function buildAnalysis(enrichment, context) {
+  const { task, goal, roadmap, milestone } = context || {};
+
+  return {
+    learningObjective: enrichment?.learningObjective || task?.description || '',
+    domain: enrichment?.domain || '',
+    subject: enrichment?.subject || '',
+    topic: enrichment?.topic || cleanTopic(task?.title) || '',
+    difficulty: enrichment?.difficulty || '',
+    matchingTerms: Array.isArray(enrichment?.matchingTerms) ? enrichment.matchingTerms : [],
+    subtopics: Array.isArray(enrichment?.subtopics) ? enrichment.subtopics : [],
+    goalTitle: goal?.title || '',
+    goalDescription: goal?.description || '',
+    roadmapTitle: roadmap?.title || '',
+    roadmapDescription: roadmap?.description || '',
+    milestoneTitle: milestone?.title || '',
+    milestoneDescription: milestone?.description || '',
+    taskTitle: task?.title || '',
+    taskDescription: task?.description || '',
+  };
+}
+
+function toTaskResource(resource) {
+  return {
+    category: resource.category || 'other',
+    title: resource.title,
+    url: resource.url,
+    source: resource.source || 'catalog',
+  };
+}
+
+async function selectResources(enrichment, context) {
+  const analysis = buildAnalysis(enrichment, context);
+  let resources = await discoverTaskResources(enrichment, context, analysis);
+  resources = resources.map(toTaskResource).filter((resource) => resource.title && resource.url);
+
+  if (!resources.length) {
+    const searchTopic = analysis.topic || cleanTopic(context?.task?.title);
+    if (searchTopic) {
+      resources = (await searchResources(searchTopic)).map(toTaskResource);
+    }
+  }
+
+  return resources;
+}
+
+module.exports = { searchResources, buildAnalysis, selectResources };
