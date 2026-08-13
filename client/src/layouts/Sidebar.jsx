@@ -5,88 +5,122 @@ import {
   ListChecks,
   Map,
   Target,
-  Plane,
   BarChart3,
-  History,
   StickyNote,
-  Star,
   ClipboardList,
-  AlertTriangle,
   BookOpen,
   Timer,
   Trophy,
   Bot,
+  Shield,
+  X,
 } from 'lucide-react';
 
-// path: null = feature not built yet, renders disabled (same "coming
-// soon" status these items already had — just honestly inert now
-// instead of silently doing nothing).
-const NAV_ITEMS = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { label: 'Tasks', icon: ListChecks, path: '/tasks' },
-  { label: 'My Goals', icon: Target, path: '/goals' },
-  { label: 'Roadmaps', icon: Map, path: '/roadmaps' },
-  { label: 'Journal', icon: BookOpen, path: '/journals' },
-  { label: 'Notes', icon: StickyNote, path: '/notes' },
-  { label: 'Focus Mode', icon: Timer, path: '/focus' },
-  { label: 'Travel', icon: Plane, path: null },
-  { label: 'Insights', icon: BarChart3, path: '/insights' },
-  { label: 'History', icon: History, path: null },
-  { label: 'Key Points', icon: Star, path: null },
-  { label: 'Mock Tests', icon: ClipboardList, path: '/mock-tests' },
-  { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
-  { label: 'Mistakes', icon: AlertTriangle, path: null },
-  { label: "Assistant", icon: Bot, path: "/assistant" }
+const NAV_GROUPS = [
+  {
+    label: 'Workspace',
+    items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+      { label: 'Tasks', icon: ListChecks, path: '/tasks' },
+      { label: 'Goals', icon: Target, path: '/goals' },
+      { label: 'Roadmaps', icon: Map, path: '/roadmaps' },
+    ],
+  },
+  {
+    label: 'Productivity',
+    items: [
+      { label: 'Focus Mode', icon: Timer, path: '/focus' },
+      { label: 'Journal', icon: BookOpen, path: '/journals' },
+      { label: 'Notes', icon: StickyNote, path: '/notes' },
+    ],
+  },
+  {
+    label: 'Performance',
+    items: [
+      { label: 'Insights', icon: BarChart3, path: '/insights' },
+      { label: 'Mock Tests', icon: ClipboardList, path: '/mock-tests' },
+      { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
+    ],
+  },
+  {
+    label: 'AI',
+    items: [{ label: 'Assistant', icon: Bot, path: '/assistant' }],
+  },
 ];
 
-function NavItem({ icon: Icon, label, path }) {
-  if (!path) {
-    return (
-      <span
-        aria-disabled="true"
-        title="Coming soon"
-        className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300"
-      >
-        <Icon className="h-5 w-5 shrink-0" />
-        <span className="hidden md:inline">{label}</span>
-      </span>
-    );
-    
-  }
-  
-
+function NavItem({ icon: Icon, label, path, onNavigate }) {
   return (
     <NavLink
       to={path}
+      onClick={onNavigate}
       className={({ isActive }) =>
         `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-          isActive ? 'bg-violet-50 text-violet-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+          isActive
+            ? 'nav-active'
+            : 'text-secondary hover:bg-hover hover:text-primary'
         }`
       }
     >
-      <Icon className="h-5 w-5 shrink-0" />
-      <span className="hidden md:inline">{label}</span>
+      <Icon className="h-[18px] w-[18px] shrink-0" />
+      <span>{label}</span>
     </NavLink>
   );
-  
 }
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onMobileClose }) {
+  const isAdmin = JSON.parse(localStorage.getItem('user') || '{}').role === 'admin';
+
+  const handleNavigate = () => {
+    if (onMobileClose) onMobileClose();
+  };
+
   return (
-    <aside className="flex w-16 flex-col border-r border-slate-100 bg-white px-2 py-6 md:w-64 md:px-4">
-      <div className="mb-8 flex items-center gap-2 px-1 md:px-2">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-sky-500 text-white">
-          <Sparkles className="h-5 w-5" />
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-subtle bg-sidebar px-4 py-5 transition-transform lg:static lg:translate-x-0 ${
+        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
+      <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-violet text-white shadow-pa-sm">
+            <Sparkles className="h-[18px] w-[18px]" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold tracking-tight text-primary">Productivity</p>
+            <p className="truncate text-xs text-muted">Analyzer</p>
+          </div>
         </div>
-        <span className="hidden truncate text-base font-bold tracking-tight text-slate-800 md:inline">
-          Productivity Analyzer
-        </span>
+        <button
+          type="button"
+          onClick={onMobileClose}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-hover lg:hidden"
+          aria-label="Close navigation menu"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
-          <NavItem key={item.label} {...item} />
+      <nav className="flex flex-1 flex-col gap-5 overflow-y-auto">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              {group.label}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {group.items.map((item) => (
+                <NavItem key={item.path} {...item} onNavigate={handleNavigate} />
+              ))}
+            </div>
+          </div>
         ))}
+        {isAdmin && (
+          <div>
+            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              Admin
+            </p>
+            <NavItem label="Admin" icon={Shield} path="/admin" onNavigate={handleNavigate} />
+          </div>
+        )}
       </nav>
     </aside>
   );

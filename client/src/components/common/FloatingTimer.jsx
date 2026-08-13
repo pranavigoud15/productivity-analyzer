@@ -17,8 +17,6 @@ export default function FloatingTimer() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Only show when: timer is active (running or paused mid-session)
-  // AND the user is NOT already on the focus page.
   const isOnFocusPage = location.pathname === '/focus';
   const isActive = isRunning || (isPaused && timeLeft > 0);
 
@@ -28,10 +26,10 @@ export default function FloatingTimer() {
     <button
       onClick={() => navigate('/focus')}
       aria-label="Return to Focus Mode"
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105 ${
+      className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-pa-lg transition-all hover:scale-105 ${
         isPaused
-          ? 'bg-amber-500 hover:bg-amber-600'
-          : 'bg-violet-600 hover:bg-violet-700'
+          ? 'bg-[var(--pa-accent-warning)] hover:opacity-90'
+          : 'bg-accent-violet hover:opacity-90'
       }`}
     >
       <Timer className="h-4 w-4" />

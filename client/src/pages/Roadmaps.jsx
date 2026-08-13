@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Loader2, Map, Trophy, Award } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Loader2, Map } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
 import StatCard from '../components/common/StatCard';
 import ContextAI from '../components/assistant/ContextAI';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
 
 function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -14,17 +16,17 @@ function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
   const progress = totalMilestones === 0 ? 0 : Math.round((completedMilestones / totalMilestones) * 100);
 
   return (
-    <li className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+    <li className="rounded-2xl border border-subtle bg-surface-secondary p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-700">{roadmap.title}</p>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <p className="truncate text-sm font-medium text-primary">{roadmap.title}</p>
+          <p className="mt-0.5 text-xs text-muted">
             {completedMilestones} completed · {pendingMilestones} pending
           </p>
         </div>
         <button
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="flex shrink-0 items-center gap-1 rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-200"
+          className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--pa-accent-blue-soft)] px-3 py-1 text-xs font-semibold text-[var(--pa-accent-blue)] hover:opacity-90"
         >
           {isExpanded ? 'Hide Weeks' : 'View Weeks'}
           {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -32,10 +34,10 @@ function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
       </div>
 
       <div className="mt-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${progress}%` }} />
+        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
+          <div className="h-full rounded-full bg-[var(--pa-accent-blue)] transition-all" style={{ width: `${progress}%` }} />
         </div>
-        <p className="mt-1.5 text-xs text-slate-400">{progress}% complete</p>
+        <p className="mt-1.5 text-xs text-muted">{progress}% complete</p>
       </div>
 
       <ContextAI
@@ -55,7 +57,7 @@ function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
       />
 
       {isExpanded && (
-        <ul className="mt-4 space-y-2 border-t border-slate-200 pt-3">
+        <ul className="mt-4 space-y-2 border-t border-default pt-3">
           {milestones.map((milestone) => {
             const isCompleted = milestone.status === 'completed';
             const isPending = pendingMilestoneIds.has(milestone._id);
@@ -67,7 +69,7 @@ function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
                 : null;
 
             return (
-              <li key={milestone._id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2">
+              <li key={milestone._id} className="flex items-center justify-between gap-3 rounded-xl bg-surface px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <button
                     onClick={() => onToggleMilestone(roadmap, milestone)}
@@ -76,25 +78,27 @@ function RoadmapCard({ roadmap, pendingMilestoneIds, onToggleMilestone }) {
                     className="shrink-0 disabled:opacity-50"
                   >
                     {isCompleted ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      <CheckCircle2 className="h-4 w-4 text-[var(--pa-accent-success)]" />
                     ) : (
-                      <Circle className="h-4 w-4 text-slate-300 hover:text-sky-400" />
+                      <Circle className="h-4 w-4 text-muted hover:text-[var(--pa-accent-blue)]" />
                     )}
                   </button>
                   <div className="min-w-0">
                     <p
                       className={`truncate text-xs font-medium ${
-                        isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'
+                        isCompleted ? 'text-muted line-through' : 'text-primary'
                       }`}
                     >
                       {milestone.title}
                     </p>
-                    {range && <p className="text-[11px] text-slate-400">{range}</p>}
+                    {range && <p className="text-[11px] text-muted">{range}</p>}
                   </div>
                 </div>
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                    isCompleted
+                      ? 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]'
+                      : 'bg-surface-secondary text-secondary'
                   }`}
                 >
                   {isCompleted ? 'Done' : 'Pending'}
@@ -173,7 +177,7 @@ export default function Roadmaps() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
         <Loader2 className="h-5 w-5 animate-spin" />
         Loading your roadmaps...
       </div>
@@ -182,18 +186,15 @@ export default function Roadmaps() {
 
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">Learning Roadmaps</h1>
-        <p className="mt-1 text-slate-500">Auto-generated week-by-week plans for each of your goals.</p>
-      </div>
+      <PageHeader
+        title="Learning Roadmaps"
+        description="Auto-generated week-by-week plans for each of your goals."
+      />
 
       {loadError && (
-        <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+        <div className="flex items-center justify-between rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
           <span>{loadError}</span>
-          <button
-            onClick={fetchRoadmaps}
-            className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100"
-          >
+          <button type="button" onClick={fetchRoadmaps} className="pa-btn-secondary px-3 py-1.5 text-xs font-semibold">
             Retry
           </button>
         </div>
@@ -201,15 +202,15 @@ export default function Roadmaps() {
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Total Roadmaps" value={totalRoadmaps} icon={Map} color="sky" />
-        <StatCard label="Total Milestones" value={totalMilestones} icon={Trophy} color="indigo" />
-        <StatCard label="Completed Milestones" value={completedMilestones} icon={Award} color="teal" />
+        <StatCard label="Total Milestones" value={totalMilestones} icon={Map} color="indigo" />
+        <StatCard label="Completed Milestones" value={completedMilestones} icon={CheckCircle2} color="teal" />
       </section>
 
-      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <section className="pa-card p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-800">Your Roadmaps</h2>
-            <p className="text-sm text-slate-400">
+            <h2 className="text-lg font-bold text-primary">Your Roadmaps</h2>
+            <p className="text-sm text-muted">
               {roadmaps.length} roadmap{roadmaps.length === 1 ? '' : 's'}
             </p>
           </div>
@@ -217,9 +218,11 @@ export default function Roadmaps() {
 
         <div className="mt-5">
           {roadmaps.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">
-              No roadmaps yet — creating a goal automatically generates one.
-            </p>
+            <EmptyState
+              icon={Map}
+              title="No roadmaps yet"
+              description="Creating a goal automatically generates one."
+            />
           ) : (
             <ul className="space-y-3">
               {roadmaps.map((roadmap) => (

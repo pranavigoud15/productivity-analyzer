@@ -11,53 +11,40 @@ const SUGGESTED_PROMPTS = [
   "Help me prioritize my tasks for today.",
 ];
 
-// ─── Typing Indicator ────────────────────────────────────────────────────────
-
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2">
-      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-        <Bot size={15} className="text-indigo-600" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-violet-soft">
+        <Bot size={15} className="accent-violet" />
       </div>
-      <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
-        <div className="flex gap-1 items-center h-4">
-          <span
-            className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"
-            style={{ animationDelay: "0ms" }}
-          />
-          <span
-            className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"
-            style={{ animationDelay: "150ms" }}
-          />
-          <span
-            className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"
-            style={{ animationDelay: "300ms" }}
-          />
+      <div className="rounded-2xl rounded-bl-sm border border-default bg-surface px-4 py-3 shadow-pa-sm">
+        <div className="flex h-4 items-center gap-1">
+          <span className="h-2 w-2 animate-bounce rounded-full bg-accent-violet" style={{ animationDelay: "0ms" }} />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-accent-violet" style={{ animationDelay: "150ms" }} />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-accent-violet" style={{ animationDelay: "300ms" }} />
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Message Bubble ───────────────────────────────────────────────────────────
-
 function MessageBubble({ msg, onRetry }) {
   const isUser = msg.role === "user";
   return (
     <div className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-          <Bot size={15} className="text-indigo-600" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-violet-soft">
+          <Bot size={15} className="accent-violet" />
         </div>
       )}
       <div className="max-w-[75%]">
         <div
-          className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
+          className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-pa-sm ${
             isUser
-              ? "bg-indigo-600 text-white rounded-br-sm"
+              ? "rounded-br-sm bg-accent-violet text-white"
               : msg.error
-              ? "bg-red-50 border border-red-200 text-red-700 rounded-bl-sm"
-              : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm"
+              ? "rounded-bl-sm border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]"
+              : "rounded-bl-sm border border-default bg-surface text-secondary"
           }`}
         >
           {msg.content}
@@ -65,21 +52,17 @@ function MessageBubble({ msg, onRetry }) {
         {msg.error && onRetry && (
           <button
             onClick={() => onRetry(msg.originalMessage)}
-            className="mt-1 flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors"
+            className="mt-1 flex items-center gap-1 text-xs text-[var(--pa-accent-danger)] transition-colors hover:opacity-80"
           >
             <RotateCcw size={11} /> Retry
           </button>
         )}
-        <p
-          className={`text-xs mt-1 text-gray-400 ${
-            isUser ? "text-right" : "text-left"
-          }`}
-        >
+        <p className={`mt-1 text-xs text-muted ${isUser ? "text-right" : "text-left"}`}>
           {msg.time}
         </p>
       </div>
       {isUser && (
-        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-violet">
           <User size={15} className="text-white" />
         </div>
       )}
@@ -87,18 +70,16 @@ function MessageBubble({ msg, onRetry }) {
   );
 }
 
-// ─── Suggestion Chips ─────────────────────────────────────────────────────────
-
 function SuggestionChips({ suggestions, onSelect, disabled }) {
   if (!suggestions || suggestions.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-2 mt-3">
+    <div className="mt-3 flex flex-wrap gap-2">
       {suggestions.map((s, i) => (
         <button
           key={i}
           onClick={() => onSelect(s)}
           disabled={disabled}
-          className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-400 rounded-full px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1 rounded-full border border-default bg-surface px-3 py-1.5 text-xs accent-violet transition-colors hover:bg-accent-violet-soft disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Sparkles size={11} />
           {s}
@@ -108,26 +89,24 @@ function SuggestionChips({ suggestions, onSelect, disabled }) {
   );
 }
 
-// ─── Empty State ──────────────────────────────────────────────────────────────
-
-function EmptyState({ onSelect }) {
+function ChatEmptyState({ onSelect }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4">
-      <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center">
-        <Bot size={32} className="text-indigo-500" />
+    <div className="flex h-full flex-col items-center justify-center gap-6 px-4 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-violet-soft">
+        <Bot size={32} className="accent-violet" />
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-gray-700">How can I help you?</h2>
-        <p className="text-sm text-gray-400 mt-1">
+        <h2 className="text-lg font-semibold text-primary">How can I help you?</h2>
+        <p className="mt-1 text-sm text-muted">
           Ask me anything about your productivity, goals, or study plans.
         </p>
       </div>
-      <div className="flex flex-col gap-2 w-full max-w-sm">
+      <div className="flex w-full max-w-sm flex-col gap-2">
         {SUGGESTED_PROMPTS.map((p) => (
           <button
             key={p}
             onClick={() => onSelect(p)}
-            className="text-left text-sm text-indigo-600 bg-white border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50 rounded-xl px-4 py-2.5 transition-colors shadow-sm"
+            className="rounded-xl border border-default bg-surface px-4 py-2.5 text-left text-sm accent-violet shadow-pa-sm transition-colors hover:border-[var(--pa-accent-violet)] hover:bg-accent-violet-soft"
           >
             {p}
           </button>
@@ -137,13 +116,10 @@ function EmptyState({ onSelect }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function Assistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  // Suggestions are tied to the last assistant message
   const [pendingSuggestions, setPendingSuggestions] = useState([]);
   const bottomRef = useRef(null);
 
@@ -158,7 +134,6 @@ export default function Assistant() {
     const trimmed = (text || input).trim();
     if (!trimmed || loading) return;
 
-    // Clear suggestions when a new message is sent
     setPendingSuggestions([]);
     setMessages((prev) => [
       ...prev,
@@ -222,32 +197,30 @@ export default function Assistant() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+    <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-3xl flex-col">
+      <div className="flex items-center justify-between border-b border-default bg-surface px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-            <Bot size={17} className="text-indigo-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-violet-soft">
+            <Bot size={17} className="accent-violet" />
           </div>
           <div>
-            <h1 className="font-semibold text-gray-800 text-sm">Smart Assistant</h1>
-            <p className="text-xs text-gray-400">AI-powered productivity help</p>
+            <h1 className="text-sm font-semibold text-primary">Smart Assistant</h1>
+            <p className="text-xs text-muted">AI-powered productivity help</p>
           </div>
         </div>
         {!isEmpty && (
           <button
             onClick={clearChat}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50"
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted transition-colors hover:bg-[var(--pa-accent-danger)]/10 hover:text-[var(--pa-accent-danger)]"
           >
             <Trash2 size={13} /> Clear
           </button>
         )}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
+      <div className="flex-1 space-y-4 overflow-y-auto bg-app px-4 py-4">
         {isEmpty ? (
-          <EmptyState onSelect={sendMessage} />
+          <ChatEmptyState onSelect={sendMessage} />
         ) : (
           <>
             {messages.map((msg, i) => {
@@ -274,27 +247,26 @@ export default function Assistant() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="px-4 py-3 bg-white border-t border-gray-200">
-        <div className="flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-2xl px-3 py-2 focus-within:border-indigo-400 transition-colors">
+      <div className="border-t border-default bg-surface px-4 py-3">
+        <div className="flex items-end gap-2 rounded-2xl border border-default bg-surface-secondary px-3 py-2 transition-colors focus-within:border-[var(--pa-accent-violet)] focus-within:shadow-[0_0_0_3px_var(--pa-accent-violet-glow)]">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
             rows={1}
-            className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 resize-none outline-none max-h-32 leading-relaxed"
+            className="max-h-32 flex-1 resize-none bg-transparent text-sm leading-relaxed text-primary outline-none placeholder:text-muted"
             style={{ scrollbarWidth: "none" }}
           />
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || loading}
-            className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0 mb-0.5"
+            className="mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center pa-btn-primary transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send size={14} className="text-white" />
           </button>
         </div>
-        <p className="text-xs text-gray-400 text-center mt-2">
+        <p className="mt-2 text-center text-xs text-muted">
           AI responses may be inaccurate. Verify important information.
         </p>
       </div>

@@ -1,24 +1,25 @@
 const COLOR_STYLES = {
-  violet: { border: 'border-violet-100', bg: 'bg-violet-50', iconBg: 'bg-violet-100', text: 'text-violet-600' },
-  emerald: { border: 'border-emerald-100', bg: 'bg-emerald-50', iconBg: 'bg-emerald-100', text: 'text-emerald-600' },
-  sky: { border: 'border-sky-100', bg: 'bg-sky-50', iconBg: 'bg-sky-100', text: 'text-sky-600' },
-  orange: { border: 'border-orange-100', bg: 'bg-orange-50', iconBg: 'bg-orange-100', text: 'text-orange-600' },
-  indigo: { border: 'border-indigo-100', bg: 'bg-indigo-50', iconBg: 'bg-indigo-100', text: 'text-indigo-600' },
-  teal: { border: 'border-teal-100', bg: 'bg-teal-50', iconBg: 'bg-teal-100', text: 'text-teal-600' },
-  cyan: { border: 'border-cyan-100', bg: 'bg-cyan-50', iconBg: 'bg-cyan-100', text: 'text-cyan-600' },
-  amber: { border: 'border-amber-100', bg: 'bg-amber-50', iconBg: 'bg-amber-100', text: 'text-amber-600' },
-  rose: { border: 'border-rose-100', bg: 'bg-rose-50', iconBg: 'bg-rose-100', text: 'text-rose-600' },
+  violet: { icon: 'accent-violet', soft: 'bg-accent-violet-soft' },
+  emerald: { icon: 'text-[var(--pa-accent-success)]', soft: 'bg-[var(--pa-accent-success-soft)]' },
+  sky: { icon: 'text-[var(--pa-accent-blue)]', soft: 'bg-[var(--pa-accent-blue-soft)]' },
+  orange: { icon: 'text-[var(--pa-accent-warning)]', soft: 'bg-[var(--pa-accent-warning)]/10' },
+  indigo: { icon: 'accent-violet', soft: 'bg-accent-violet-soft' },
+  teal: { icon: 'text-[var(--pa-accent-success)]', soft: 'bg-[var(--pa-accent-success-soft)]' },
+  cyan: { icon: 'text-[var(--pa-accent-blue)]', soft: 'bg-[var(--pa-accent-blue-soft)]' },
+  amber: { icon: 'text-[var(--pa-accent-warning)]', soft: 'bg-[var(--pa-accent-warning)]/10' },
+  rose: { icon: 'text-[var(--pa-accent-danger)]', soft: 'bg-[var(--pa-accent-danger)]/10' },
 };
 
-export default function StatCard({ icon: Icon, label, value, color }) {
-  const styles = COLOR_STYLES[color];
+export default function StatCard({ icon: Icon, label, value, color = 'violet' }) {
+  const styles = COLOR_STYLES[color] || COLOR_STYLES.violet;
+
   return (
-    <div className={`rounded-2xl border ${styles.border} ${styles.bg} p-5 shadow-sm transition-shadow hover:shadow-md`}>
-      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${styles.iconBg}`}>
-        <Icon className={`h-5 w-5 ${styles.text}`} />
+    <div className="pa-card p-4 transition-shadow hover:shadow-pa-md sm:p-5">
+      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${styles.soft}`}>
+        <Icon className={`h-5 w-5 ${styles.icon}`} />
       </div>
-      <p className="mt-4 text-2xl font-bold text-slate-800">{value}</p>
-      <p className="text-sm text-slate-500">{label}</p>
+      <p className="mt-3 text-2xl font-bold text-primary">{value}</p>
+      <p className="text-sm text-secondary">{label}</p>
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, CalendarDays, Trash2, X, Loader2 } from 'lucide-react';
+import { Plus, CalendarDays, Trash2, X, Loader2, Target } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
 import ContextAI from '../components/assistant/ContextAI';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
 
 function GoalCard({ goal, isPending, onDelete }) {
   const isCompleted = goal.status === 'completed';
@@ -13,17 +15,19 @@ function GoalCard({ goal, isPending, onDelete }) {
     : null;
 
   return (
-    <li className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50">
+    <li className="rounded-2xl border border-subtle bg-surface-secondary p-4 transition-colors hover:bg-hover">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-700">{goal.title}</p>
+          <p className="truncate text-sm font-medium text-primary">{goal.title}</p>
           {goal.description && (
-            <p className="mt-0.5 truncate text-xs text-slate-400">{goal.description}</p>
+            <p className="mt-0.5 truncate text-xs text-muted">{goal.description}</p>
           )}
         </div>
         <span
           className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-            isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
+            isCompleted
+              ? 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]'
+              : 'bg-accent-violet-soft accent-violet'
           }`}
         >
           {isCompleted ? 'Completed' : 'Active'}
@@ -31,13 +35,13 @@ function GoalCard({ goal, isPending, onDelete }) {
       </div>
 
       <div className="mt-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
           <div
-            className={`h-full rounded-full transition-all ${isCompleted ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+            className={`h-full rounded-full transition-all ${isCompleted ? 'bg-[var(--pa-accent-success)]' : 'bg-accent-violet'}`}
             style={{ width: `${savedProgress}%` }}
           />
         </div>
-        <div className="mt-1.5 flex items-center justify-between text-xs text-slate-400">
+        <div className="mt-1.5 flex items-center justify-between text-xs text-muted">
           <span>{savedProgress}% complete</span>
           {formattedDate && (
             <span className="flex items-center gap-1">
@@ -53,7 +57,7 @@ function GoalCard({ goal, isPending, onDelete }) {
           onClick={() => onDelete(goal)}
           disabled={isPending}
           aria-label="Delete goal"
-          className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+          className="ml-auto rounded-lg p-1.5 text-muted hover:bg-[var(--pa-accent-danger)]/10 hover:text-[var(--pa-accent-danger)] disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -109,14 +113,14 @@ function AddGoalForm({ onSubmit, onClose }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 space-y-3 rounded-2xl bg-slate-50 p-3">
+    <form onSubmit={handleSubmit} className="mb-4 space-y-3 rounded-2xl bg-surface-secondary p-3">
       <input
         autoFocus
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Goal title"
         disabled={isSubmitting}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+        className="pa-input w-full px-3 py-2 text-sm disabled:opacity-60"
       />
       <textarea
         value={description}
@@ -124,7 +128,7 @@ function AddGoalForm({ onSubmit, onClose }) {
         placeholder="Description (optional)"
         disabled={isSubmitting}
         rows={2}
-        className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+        className="pa-input w-full resize-none px-3 py-2 text-sm disabled:opacity-60"
       />
       <div className="flex items-center gap-2">
         <input
@@ -132,12 +136,12 @@ function AddGoalForm({ onSubmit, onClose }) {
           value={targetDate}
           onChange={(e) => setTargetDate(e.target.value)}
           disabled={isSubmitting}
-          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 disabled:opacity-60"
+          className="pa-input flex-1 px-3 py-2 text-sm disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="pa-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
         >
           {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Add
@@ -147,12 +151,12 @@ function AddGoalForm({ onSubmit, onClose }) {
           onClick={onClose}
           disabled={isSubmitting}
           aria-label="Cancel"
-          className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="rounded-xl p-2 text-muted hover:bg-hover hover:text-secondary"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      {error && <p className="text-xs font-medium text-red-500">{error}</p>}
+      {error && <p className="text-xs font-medium text-[var(--pa-accent-danger)]">{error}</p>}
     </form>
   );
 }
@@ -189,9 +193,6 @@ export default function Goals() {
     fetchGoals();
   }, [fetchGoals]);
 
-  // Note: creating a goal also auto-generates a roadmap and tasks on the
-  // backend (unchanged). This page only refetches goals — the new
-  // roadmap/tasks will be there next time Roadmaps/Tasks is visited.
   const handleAddGoal = async ({ title, description, targetDate }) => {
     await API.post('/goals', { title, description, targetDate }, { headers: getAuthHeaders() });
     await fetchGoals();
@@ -206,10 +207,6 @@ export default function Goals() {
     });
   };
 
-  // Note: deleting a goal also cascade-deletes its roadmap and
-  // roadmap-generated tasks on the backend (unchanged). This page only
-  // filters its own `goals` state — Roadmaps/Tasks reflect the deletion
-  // next time they're fetched.
   const handleDeleteGoal = async (goal) => {
     const id = goal._id || goal.id;
     setGoalPending(id, true);
@@ -222,12 +219,11 @@ export default function Goals() {
     }
   };
 
-  const totalGoals = goals.length;
   const completedGoals = goals.filter((g) => g.status === 'completed').length;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
         <Loader2 className="h-5 w-5 animate-spin" />
         Loading your goals...
       </div>
@@ -236,31 +232,26 @@ export default function Goals() {
 
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">My Goals</h1>
-        <p className="mt-1 text-slate-500">
-          {completedGoals} completed · {totalGoals - completedGoals} active
-        </p>
-      </div>
+      <PageHeader
+        title="My Goals"
+        description={`${completedGoals} completed · ${goals.length - completedGoals} active`}
+      />
 
       {loadError && (
-        <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+        <div className="flex items-center justify-between rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
           <span>{loadError}</span>
-          <button
-            onClick={fetchGoals}
-            className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100"
-          >
+          <button type="button" onClick={fetchGoals} className="pa-btn-secondary px-3 py-1.5 text-xs font-semibold">
             Retry
           </button>
         </div>
       )}
 
-      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <section className="pa-card p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">All Goals</h2>
+          <h2 className="text-lg font-bold text-primary">All Goals</h2>
           <button
             onClick={() => setIsAddingGoal((prev) => !prev)}
-            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            className="pa-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
           >
             <Plus className="h-4 w-4" />
             Add Goal
@@ -271,7 +262,16 @@ export default function Goals() {
           {isAddingGoal && <AddGoalForm onSubmit={handleAddGoal} onClose={() => setIsAddingGoal(false)} />}
 
           {goals.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">No goals yet — set one to start tracking progress.</p>
+            <EmptyState
+              icon={Target}
+              title="No goals yet"
+              description="Set one to start tracking progress."
+              action={
+                <button type="button" onClick={() => setIsAddingGoal(true)} className="pa-btn-primary px-4 py-2 text-sm font-medium">
+                  Add Goal
+                </button>
+              }
+            />
           ) : (
             <ul className="space-y-3">
               {goals.map((goal) => (

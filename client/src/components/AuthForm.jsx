@@ -1,197 +1,262 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import API from "../services/api";
-
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FaEnvelope,
   FaLock,
   FaUser,
   FaEye,
   FaEyeSlash,
-  FaUserGraduate,
-} from "react-icons/fa";
+} from 'react-icons/fa';
+import { Sparkles } from 'lucide-react';
+import API from '../services/api';
+import ThemeToggle from './ui/ThemeToggle';
+
+const REMEMBER_KEY = 'pa-remember-email';
 
 function AuthForm({ title }) {
-  const isLogin = title === "Login";
-
+  const isLogin = title === 'Login';
   const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(
+    () => Boolean(localStorage.getItem(REMEMBER_KEY)),
+  );
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem(REMEMBER_KEY) || '');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsSubmitting(true);
 
     try {
       if (!isLogin) {
         if (password !== confirmPassword) {
-          alert("Passwords do not match");
+          setError('Passwords do not match');
           return;
         }
 
-        const res = await API.post("/auth/signup", {
-          name,
-          email,
-          password,
-        });
-
+        const res = await API.post('/auth/signup', { name, email, password });
         alert(res.data.message);
-        navigate("/");
+        navigate('/');
       } else {
-        const res = await API.post("/auth/login", {
-          email,
-          password,
-        });
+        const res = await API.post('/auth/login', { email, password });
 
-        localStorage.setItem("token", res.data.token);
+        localStorage.setItem('token', res.data.token);
+        if (res.data.user) {
+          localStorage.setItem('user', JSON.stringify(res.data.user));
+        }
 
-        alert("Login Successful");
+        if (rememberMe) {
+          localStorage.setItem(REMEMBER_KEY, email);
+        } else {
+          localStorage.removeItem(REMEMBER_KEY);
+        }
 
-        navigate("/dashboard");
+        navigate('/dashboard');
       }
-    } catch (error) {
-      alert(
-        error.response?.data?.message || "Something went wrong"
-      );
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-6xl grid md:grid-cols-2 overflow-hidden rounded-3xl shadow-2xl border border-white/10">
-        <div className="hidden md:flex flex-col justify-center items-center bg-slate-950/50 backdrop-blur-xl p-10">
-          <div className="bg-blue-600 p-6 rounded-full mb-6 shadow-lg">
-            <FaUserGraduate className="text-6xl text-white" />
+    <div className="relative min-h-screen bg-app">
+      <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+        <ThemeToggle compact />
+      </div>
+
+      <div className="grid min-h-screen lg:grid-cols-2">
+        {/* Brand panel */}
+        <div className="relative hidden overflow-hidden bg-[#020617] lg:flex lg:flex-col lg:justify-between lg:p-12">
+          <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-[var(--pa-accent-violet)]/20 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[var(--pa-accent-blue)]/15 blur-3xl" />
+
+          <div className="relative">
+            <div className="inline-flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-violet shadow-pa-md">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-white">Productivity Analyzer</p>
+                <p className="text-sm text-slate-400">AI-powered student workspace</p>
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-5xl font-bold text-white text-center">
-            Student Productivity Analyzer
-          </h1>
+          <div className="relative max-w-lg">
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-5xl">
+              Plan Smarter. Track Better. Achieve Faster.
+            </h1>
+            <p className="mt-5 text-lg leading-relaxed text-slate-400">
+              Your intelligent productivity workspace for goals, tasks, focus sessions,
+              and AI-assisted learning — all in one premium student platform.
+            </p>
+          </div>
 
-          <p className="text-slate-400 text-center mt-6 text-xl leading-10">
-            Track Study Goals
-            <br />
-            Generate AI Roadmaps
-            <br />
-            Manage Notes & Tasks
-            <br />
-            Ace Every Semester
+          <p className="relative text-sm text-slate-500">
+            Trusted by students building better study habits every day.
           </p>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-xl p-8 md:p-12 flex items-center">
-          <div className="w-full">
-            <div className="flex justify-center mb-4">
-              <div className="bg-blue-600 p-4 rounded-full shadow-lg">
-                <FaUserGraduate className="text-4xl text-white" />
+        {/* Form panel */}
+        <div className="flex items-center justify-center px-4 py-10 sm:px-8">
+          <div className="w-full max-w-md">
+            <div className="mb-8 lg:hidden">
+              <div className="inline-flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-violet">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-lg font-bold text-primary">Productivity Analyzer</span>
               </div>
             </div>
 
-            <h2 className="text-4xl font-bold text-center text-white mb-2">
-              {title}
-            </h2>
+            <div className="pa-card-elevated p-6 sm:p-8">
+              <h2 className="text-2xl font-semibold text-primary">
+                {isLogin ? 'Welcome back' : 'Create your account'}
+              </h2>
+              <p className="mt-1.5 text-sm text-secondary">
+                {isLogin
+                  ? 'Sign in to continue to your productivity workspace.'
+                  : 'Start tracking goals, tasks, and focus in one place.'}
+              </p>
 
-            <p className="text-center text-slate-400 mb-8">
-              Welcome to your productivity journey
-            </p>
-
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              {!isLogin && (
-                <div className="relative">
-                  <FaUser className="absolute left-4 top-4 text-slate-400" />
-
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-slate-800/70 text-white p-3 pl-12 rounded-xl border border-slate-700 outline-none focus:border-blue-500"
-                  />
+              {error && (
+                <div className="mt-4 rounded-lg border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 px-3 py-2 text-sm text-[var(--pa-accent-danger)]">
+                  {error}
                 </div>
               )}
 
-              <div className="relative">
-                <FaEnvelope className="absolute left-4 top-4 text-slate-400" />
+              <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+                {!isLogin && (
+                  <div>
+                    <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-secondary">
+                      Full name
+                    </label>
+                    <div className="relative">
+                      <FaUser className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                      <input
+                        id="name"
+                        type="text"
+                        placeholder="Your name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        className="pa-input w-full py-2.5 pl-10 pr-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
 
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-800/70 text-white p-3 pl-12 rounded-xl border border-slate-700 outline-none focus:border-blue-500"
-                />
-              </div>
+                <div>
+                  <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-secondary">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <FaEnvelope className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="pa-input w-full py-2.5 pl-10 pr-3 text-sm"
+                    />
+                  </div>
+                </div>
 
-              <div className="relative">
-                <FaLock className="absolute left-4 top-4 text-slate-400" />
+                <div>
+                  <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-secondary">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <FaLock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pa-input w-full py-2.5 pl-10 pr-10 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-secondary"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
 
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-800/70 text-white p-3 pl-12 pr-12 rounded-xl border border-slate-700 outline-none focus:border-blue-500"
-                />
+                {!isLogin && (
+                  <div>
+                    <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-secondary">
+                      Confirm password
+                    </label>
+                    <div className="relative">
+                      <FaLock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                      <input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Confirm password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="pa-input w-full py-2.5 pl-10 pr-3 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {isLogin && (
+                  <label className="flex items-center gap-2 text-sm text-secondary">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="rounded border-default"
+                    />
+                    Remember email
+                  </label>
+                )}
 
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-slate-400"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="pa-btn-primary w-full py-2.5 text-sm font-semibold"
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {isSubmitting ? 'Please wait…' : isLogin ? 'Sign in' : 'Create account'}
                 </button>
-              </div>
+              </form>
 
-              {!isLogin && (
-                <div className="relative">
-                  <FaLock className="absolute left-4 top-4 text-slate-400" />
-
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(e.target.value)
-                    }
-                    className="w-full bg-slate-800/70 text-white p-3 pl-12 rounded-xl border border-slate-700 outline-none focus:border-blue-500"
-                  />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white font-semibold text-lg"
-              >
-                {isLogin ? "Login" : "Create Account"}
-              </button>
-            </form>
-
-            <div className="text-center mt-6 text-slate-400">
-              {isLogin ? (
-                <>
-                  New Student?{" "}
-                  <Link
-                    to="/signup"
-                    className="text-blue-400 hover:text-blue-300 font-medium"
-                  >
-                    Create Account
-                  </Link>
-                </>
-              ) : (
-                <>
-                  Already have an account?{" "}
-                  <Link
-                    to="/"
-                    className="text-blue-400 hover:text-blue-300 font-medium"
-                  >
-                    Login
-                  </Link>
-                </>
-              )}
+              <p className="mt-6 text-center text-sm text-secondary">
+                {isLogin ? (
+                  <>
+                    Don&apos;t have an account?{' '}
+                    <Link to="/signup" className="font-medium accent-violet hover:underline">
+                      Create account
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <Link to="/" className="font-medium accent-violet hover:underline">
+                      Sign in
+                    </Link>
+                  </>
+                )}
+              </p>
             </div>
           </div>
         </div>

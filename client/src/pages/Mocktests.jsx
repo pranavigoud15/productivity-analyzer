@@ -16,6 +16,14 @@ import {
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
 import ContextAI from '../components/assistant/ContextAI';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
+
+const DIFFICULTY_COLORS = {
+  Easy: 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]',
+  Medium: 'bg-[var(--pa-accent-warning)]/10 text-[var(--pa-accent-warning)]',
+  Hard: 'bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]',
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -36,12 +44,6 @@ function formatDuration(seconds) {
   return `${m}m ${s}s`;
 }
 
-const DIFFICULTY_COLORS = {
-  Easy: 'bg-emerald-100 text-emerald-700',
-  Medium: 'bg-amber-100 text-amber-700',
-  Hard: 'bg-rose-100 text-rose-700',
-};
-
 // ---------------------------------------------------------------------------
 // Sub-views
 // ---------------------------------------------------------------------------
@@ -49,18 +51,18 @@ const DIFFICULTY_COLORS = {
 // 1. Test list card
 function TestCard({ test, stats, onStart, onHistory }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="pa-card p-5 transition-shadow hover:shadow-pa-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-slate-800">{test.title}</p>
-          <p className="mt-0.5 text-xs text-slate-500">{test.subject} · {test.topic}</p>
+          <p className="truncate font-semibold text-primary">{test.title}</p>
+          <p className="mt-0.5 text-xs text-secondary">{test.subject} · {test.topic}</p>
         </div>
         <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${DIFFICULTY_COLORS[test.difficulty]}`}>
           {test.difficulty}
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
+      <div className="mt-3 flex flex-wrap gap-3 text-xs text-secondary">
         <span className="flex items-center gap-1">
           <ClipboardList className="h-3.5 w-3.5" />
           {test.totalQuestions} questions
@@ -71,7 +73,7 @@ function TestCard({ test, stats, onStart, onHistory }) {
         </span>
         {stats && (
           <span className="flex items-center gap-1">
-            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+            <Trophy className="h-3.5 w-3.5 text-[var(--pa-accent-warning)]" />
             Best: {stats.bestPercentage}%
           </span>
         )}
@@ -80,14 +82,14 @@ function TestCard({ test, stats, onStart, onHistory }) {
       <div className="mt-4 flex gap-2">
         <button
           onClick={() => onStart(test)}
-          className="flex-1 rounded-xl bg-violet-600 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+          className="flex-1 pa-btn-primary py-2 text-sm font-semibold text-white hover:opacity-90"
         >
           Start Test
         </button>
         {stats && stats.attemptCount > 0 && (
           <button
             onClick={() => onHistory(test)}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="pa-btn-secondary px-3 py-2 text-sm font-medium"
           >
             History
           </button>
@@ -135,29 +137,29 @@ function ActiveTest({ test, onSubmit }) {
   return (
     <div className="space-y-4">
       {/* Header bar */}
-      <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white px-5 py-3 shadow-sm">
+      <div className="pa-card flex items-center justify-between px-5 py-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-700">{test.title}</p>
-          <p className="text-xs text-slate-400">{currentIndex + 1} / {totalQ}</p>
+          <p className="truncate text-sm font-semibold text-secondary">{test.title}</p>
+          <p className="text-xs text-muted">{currentIndex + 1} / {totalQ}</p>
         </div>
-        <div className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-bold ${isTimeLow ? 'bg-rose-100 text-rose-700' : 'bg-violet-100 text-violet-700'}`}>
+        <div className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-bold ${isTimeLow ? 'bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]' : 'bg-accent-violet-soft accent-violet'}`}>
           <Clock className="h-4 w-4" />
           {formatTime(timeLeft)}
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-secondary">
         <div
-          className="h-full rounded-full bg-violet-500 transition-all"
+          className="h-full rounded-full bg-accent-violet transition-all"
           style={{ width: `${progress * 100}%` }}
         />
       </div>
 
       {/* Question */}
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <p className="mb-1 text-xs font-medium text-slate-400">Question {currentIndex + 1} of {totalQ}</p>
-        <p className="text-base font-semibold leading-relaxed text-slate-800">{question.questionText}</p>
+      <div className="pa-card p-6">
+        <p className="mb-1 text-xs font-medium text-muted">Question {currentIndex + 1} of {totalQ}</p>
+        <p className="text-base font-semibold leading-relaxed text-primary">{question.questionText}</p>
 
         <div className="mt-5 space-y-3">
           {question.options.map((opt) => {
@@ -168,11 +170,11 @@ function ActiveTest({ test, onSubmit }) {
                 onClick={() => handleAnswer(opt.label)}
                 className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left text-sm transition-all ${
                   selected
-                    ? 'border-violet-400 bg-violet-50 text-violet-800'
-                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-violet-300 hover:bg-violet-50/50'
+                    ? 'border-[var(--pa-accent-violet)] bg-accent-violet-soft text-primary'
+                    : 'border-default bg-surface-secondary text-secondary hover:border-[var(--pa-accent-violet)] hover:bg-accent-violet-soft'
                 }`}
               >
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${selected ? 'bg-violet-600 text-white' : 'bg-white border border-slate-300 text-slate-600'}`}>
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${selected ? 'bg-accent-violet text-white' : 'bg-surface border border-default text-secondary'}`}>
                   {opt.label}
                 </span>
                 {opt.text}
@@ -187,18 +189,18 @@ function ActiveTest({ test, onSubmit }) {
         <button
           onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
           disabled={currentIndex === 0}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary hover:bg-surface-secondary disabled:opacity-40"
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
         </button>
 
-        <span className="text-xs text-slate-400">{answeredCount} / {totalQ} answered</span>
+        <span className="text-xs text-muted">{answeredCount} / {totalQ} answered</span>
 
         {currentIndex < totalQ - 1 ? (
           <button
             onClick={() => setCurrentIndex((i) => i + 1)}
-            className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+            className="flex items-center gap-1.5 pa-btn-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             Next
             <ChevronRight className="h-4 w-4" />
@@ -206,7 +208,7 @@ function ActiveTest({ test, onSubmit }) {
         ) : (
           <button
             onClick={() => setShowConfirm(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+            className="flex items-center gap-1.5 rounded-xl bg-[var(--pa-accent-success)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             Submit
           </button>
@@ -214,8 +216,8 @@ function ActiveTest({ test, onSubmit }) {
       </div>
 
       {/* Question nav dots */}
-      <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-        <p className="mb-2 text-xs font-medium text-slate-500">Jump to question</p>
+      <div className="pa-card p-4">
+        <p className="mb-2 text-xs font-medium text-secondary">Jump to question</p>
         <div className="flex flex-wrap gap-2">
           {test.questions.map((q, i) => {
             const answered = answers[String(q._id)];
@@ -225,10 +227,10 @@ function ActiveTest({ test, onSubmit }) {
                 onClick={() => setCurrentIndex(i)}
                 className={`h-7 w-7 rounded-lg text-xs font-semibold transition-colors ${
                   i === currentIndex
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-accent-violet text-white'
                     : answered
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    ? 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]'
+                    : 'bg-surface-secondary text-secondary hover:bg-hover'
                 }`}
               >
                 {i + 1}
@@ -241,25 +243,25 @@ function ActiveTest({ test, onSubmit }) {
       {/* Submit confirmation modal */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="mx-4 w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-slate-800">Submit Test?</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              You have answered <span className="font-semibold text-slate-700">{answeredCount}</span> of{' '}
-              <span className="font-semibold text-slate-700">{totalQ}</span> questions.
+          <div className="pa-card-elevated mx-4 w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-primary">Submit Test?</h3>
+            <p className="mt-2 text-sm text-secondary">
+              You have answered <span className="font-semibold text-secondary">{answeredCount}</span> of{' '}
+              <span className="font-semibold text-secondary">{totalQ}</span> questions.
               {totalQ - answeredCount > 0 && (
-                <> <span className="text-amber-600 font-medium">{totalQ - answeredCount} unanswered</span> questions will be marked incorrect.</>
+                <> <span className="font-medium text-[var(--pa-accent-warning)]">{totalQ - answeredCount} unanswered</span> questions will be marked incorrect.</>
               )}
             </p>
             <div className="mt-5 flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 rounded-xl border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="flex-1 rounded-xl border border-default py-2 text-sm font-medium text-secondary hover:bg-surface-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleSubmit(false)}
-                className="flex-1 rounded-xl bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                className="flex-1 rounded-xl bg-[var(--pa-accent-success)] py-2 text-sm font-semibold text-white hover:opacity-90"
               >
                 Submit
               </button>
@@ -279,30 +281,30 @@ function ResultsView({ attempt, onRetry, onBack }) {
   return (
     <div className="space-y-6">
       {/* Score banner */}
-      <div className={`rounded-3xl p-8 text-center ${isPassed ? 'bg-emerald-50 border border-emerald-100' : 'bg-rose-50 border border-rose-100'}`}>
-        <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full text-3xl font-black ${isPassed ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+      <div className={`rounded-3xl border p-8 text-center ${isPassed ? 'border-[var(--pa-accent-success)]/30 bg-[var(--pa-accent-success-soft)]' : 'border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10'}`}>
+        <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full text-3xl font-black ${isPassed ? 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]' : 'bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]'}`}>
           {attempt.percentage}%
         </div>
-        <h2 className="mt-4 text-2xl font-bold text-slate-800">{isPassed ? 'Well Done!' : 'Keep Practising!'}</h2>
-        <p className="mt-1 text-sm text-slate-500">{attempt.title}</p>
+        <h2 className="mt-4 text-2xl font-bold text-primary">{isPassed ? 'Well Done!' : 'Keep Practising!'}</h2>
+        <p className="mt-1 text-sm text-secondary">{attempt.title}</p>
       </div>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {[
-          { label: 'Correct', value: attempt.correctCount, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Incorrect', value: attempt.incorrectCount, icon: XCircle, color: 'text-rose-600 bg-rose-50' },
-          { label: 'Unanswered', value: attempt.unansweredCount, icon: Circle, color: 'text-slate-500 bg-slate-50' },
-          { label: 'Score', value: `${attempt.score}/${attempt.totalQuestions}`, icon: Trophy, color: 'text-violet-600 bg-violet-50' },
-          { label: 'Time Taken', value: formatDuration(attempt.timeTakenSeconds), icon: Clock, color: 'text-sky-600 bg-sky-50' },
-          { label: 'Difficulty', value: attempt.difficulty, icon: BarChart3, color: 'text-amber-600 bg-amber-50' },
+          { label: 'Correct', value: attempt.correctCount, icon: CheckCircle2, color: 'text-[var(--pa-accent-success)] bg-[var(--pa-accent-success-soft)]' },
+          { label: 'Incorrect', value: attempt.incorrectCount, icon: XCircle, color: 'text-[var(--pa-accent-danger)] bg-[var(--pa-accent-danger)]/10' },
+          { label: 'Unanswered', value: attempt.unansweredCount, icon: Circle, color: 'text-secondary bg-surface-secondary' },
+          { label: 'Score', value: `${attempt.score}/${attempt.totalQuestions}`, icon: Trophy, color: 'accent-violet bg-accent-violet-soft' },
+          { label: 'Time Taken', value: formatDuration(attempt.timeTakenSeconds), icon: Clock, color: 'text-[var(--pa-accent-blue)] bg-[var(--pa-accent-blue-soft)]' },
+          { label: 'Difficulty', value: attempt.difficulty, icon: BarChart3, color: 'text-[var(--pa-accent-warning)] bg-[var(--pa-accent-warning)]/10' },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div key={label} className="pa-card p-4">
             <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${color}`}>
               <Icon className="h-4 w-4" />
             </div>
-            <p className="mt-2 text-xl font-bold text-slate-800">{value}</p>
-            <p className="text-xs text-slate-500">{label}</p>
+            <p className="mt-2 text-xl font-bold text-primary">{value}</p>
+            <p className="text-xs text-secondary">{label}</p>
           </div>
         ))}
       </div>
@@ -326,10 +328,10 @@ function ResultsView({ attempt, onRetry, onBack }) {
       {/* Answer review toggle */}
       <button
         onClick={() => setShowReview((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className="pa-btn-secondary flex w-full items-center justify-between px-5 py-3 text-sm font-medium"
       >
         <span className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-violet-500" />
+          <BookOpen className="h-4 w-4 accent-violet" />
           {showReview ? 'Hide' : 'Show'} Answers &amp; Explanations
         </span>
         <ChevronRight className={`h-4 w-4 transition-transform ${showReview ? 'rotate-90' : ''}`} />
@@ -342,43 +344,43 @@ function ResultsView({ attempt, onRetry, onBack }) {
               key={i}
               className={`rounded-2xl border p-5 ${
                 qr.isCorrect
-                  ? 'border-emerald-100 bg-emerald-50/60'
+                  ? 'border-[var(--pa-accent-success)]/30 bg-[var(--pa-accent-success-soft)]'
                   : qr.selectedOption
-                  ? 'border-rose-100 bg-rose-50/60'
-                  : 'border-slate-100 bg-slate-50/60'
+                  ? 'border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10'
+                  : 'border-subtle bg-surface-secondary'
               }`}
             >
               <div className="flex items-start gap-2">
                 {qr.isCorrect ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--pa-accent-success)]" />
                 ) : (
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--pa-accent-danger)]" />
                 )}
-                <p className="text-sm font-medium text-slate-800">Q{i + 1}. {qr.questionText}</p>
+                <p className="text-sm font-medium text-primary">Q{i + 1}. {qr.questionText}</p>
               </div>
 
               <div className="mt-3 space-y-2">
                 {qr.options.map((opt) => {
                   const isCorrect = opt.label === qr.correctOption;
                   const isSelected = opt.label === qr.selectedOption;
-                  let cls = 'border-slate-200 bg-white text-slate-700';
-                  if (isCorrect) cls = 'border-emerald-400 bg-emerald-50 text-emerald-800';
-                  else if (isSelected && !isCorrect) cls = 'border-rose-400 bg-rose-50 text-rose-800';
+                  let cls = 'border-default bg-surface text-secondary';
+                  if (isCorrect) cls = 'border-[var(--pa-accent-success)] bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]';
+                  else if (isSelected && !isCorrect) cls = 'border-[var(--pa-accent-danger)] bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]';
 
                   return (
                     <div key={opt.label} className={`flex items-start gap-2 rounded-xl border p-2.5 text-xs ${cls}`}>
                       <span className="font-bold shrink-0">{opt.label}.</span>
                       {opt.text}
-                      {isCorrect && <CheckCircle2 className="ml-auto h-3.5 w-3.5 shrink-0 text-emerald-600" />}
-                      {isSelected && !isCorrect && <XCircle className="ml-auto h-3.5 w-3.5 shrink-0 text-rose-500" />}
+                      {isCorrect && <CheckCircle2 className="ml-auto h-3.5 w-3.5 shrink-0 text-[var(--pa-accent-success)]" />}
+                      {isSelected && !isCorrect && <XCircle className="ml-auto h-3.5 w-3.5 shrink-0 text-[var(--pa-accent-danger)]" />}
                     </div>
                   );
                 })}
               </div>
 
               {qr.explanation && (
-                <div className="mt-3 rounded-xl bg-white/70 px-3 py-2 text-xs text-slate-600">
-                  <span className="font-semibold text-slate-700">Explanation: </span>
+                <div className="mt-3 rounded-xl bg-surface/70 px-3 py-2 text-xs text-secondary">
+                  <span className="font-semibold text-secondary">Explanation: </span>
                   {qr.explanation}
                 </div>
               )}
@@ -390,13 +392,13 @@ function ResultsView({ attempt, onRetry, onBack }) {
       <div className="flex gap-3">
         <button
           onClick={onBack}
-          className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="pa-btn-secondary flex-1 py-2.5 text-sm font-medium"
         >
           All Tests
         </button>
         <button
           onClick={onRetry}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700"
+          className="flex-1 flex items-center justify-center gap-2 pa-btn-primary py-2.5 text-sm font-semibold text-white hover:opacity-90"
         >
           <RotateCcw className="h-4 w-4" />
           Retry
@@ -427,18 +429,18 @@ function HistoryView({ test, onBack, onStart }) {
   }, [test._id]);
 
   if (isLoading) {
-    return <div className="py-16 text-center text-sm text-slate-400">Loading history…</div>;
+    return <div className="py-16 text-center text-sm text-muted">Loading history…</div>;
   }
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="rounded-xl border border-slate-200 p-2 hover:bg-slate-50">
-          <ChevronLeft className="h-4 w-4 text-slate-600" />
+        <button onClick={onBack} className="pa-btn-secondary p-2">
+          <ChevronLeft className="h-4 w-4 text-secondary" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-slate-800">{test.title}</h2>
-          <p className="text-xs text-slate-500">Attempt history</p>
+          <h2 className="text-lg font-bold text-primary">{test.title}</h2>
+          <p className="text-xs text-secondary">Attempt history</p>
         </div>
       </div>
 
@@ -450,9 +452,9 @@ function HistoryView({ test, onBack, onStart }) {
             { label: 'Average', value: stats.averagePercentage != null ? `${stats.averagePercentage}%` : '—' },
             { label: 'Latest', value: stats.latestAttempt ? `${stats.latestAttempt.percentage}%` : '—' },
           ].map(({ label, value }) => (
-            <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm text-center">
-              <p className="text-xl font-bold text-slate-800">{value}</p>
-              <p className="text-xs text-slate-500">{label}</p>
+            <div key={label} className="pa-card p-4 text-center">
+              <p className="text-xl font-bold text-primary">{value}</p>
+              <p className="text-xs text-secondary">{label}</p>
             </div>
           ))}
         </div>
@@ -460,16 +462,16 @@ function HistoryView({ test, onBack, onStart }) {
 
       <div className="space-y-3">
         {attempts.map((a, i) => (
-          <div key={a._id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div key={a._id} className="pa-card flex items-center justify-between p-4">
             <div>
-              <p className="text-sm font-semibold text-slate-700">
+              <p className="text-sm font-semibold text-secondary">
                 Attempt {attempts.length - i} — {a.percentage}%
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted">
                 {new Date(a.completedAt).toLocaleDateString()} · {a.correctCount}/{a.totalQuestions} correct · {formatDuration(a.timeTakenSeconds)}
               </p>
             </div>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${a.percentage >= 50 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${a.percentage >= 50 ? 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]' : 'bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]'}`}>
               {a.percentage >= 50 ? 'Pass' : 'Fail'}
             </span>
           </div>
@@ -478,7 +480,7 @@ function HistoryView({ test, onBack, onStart }) {
 
       <button
         onClick={() => onStart(test)}
-        className="w-full rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700"
+        className="w-full pa-btn-primary py-2.5 text-sm font-semibold text-white hover:opacity-90"
       >
         Start New Attempt
       </button>
@@ -588,7 +590,7 @@ export default function MockTests() {
       <div className="space-y-2">
         <button
           onClick={() => { setView(VIEW.LIST); setActiveTest(null); }}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
+          className="flex items-center gap-1.5 text-sm text-secondary hover:text-secondary"
         >
           <ChevronLeft className="h-4 w-4" />
           Exit test
@@ -623,8 +625,8 @@ export default function MockTests() {
   // ---- LIST VIEW ----
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-300 border-t-violet-600" />
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-default border-t-[var(--pa-accent-violet)]" />
         Loading mock tests…
       </div>
     );
@@ -632,26 +634,26 @@ export default function MockTests() {
 
   return (
     <>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">Mock Tests</h1>
-          <p className="mt-1 text-slate-500">{tests.length} test{tests.length === 1 ? '' : 's'} available</p>
-        </div>
-        {tests.length === 0 && (
-          <button
-            onClick={handleSeed}
-            disabled={isSeeding}
-            className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
-          >
-            {isSeeding ? 'Loading…' : 'Load Sample Tests'}
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Mock Tests"
+        description={`${tests.length} test${tests.length === 1 ? '' : 's'} available`}
+        actions={
+          tests.length === 0 ? (
+            <button
+              onClick={handleSeed}
+              disabled={isSeeding}
+              className="pa-btn-primary flex items-center gap-2 px-4 py-2 text-sm font-semibold disabled:opacity-60"
+            >
+              {isSeeding ? 'Loading…' : 'Load Sample Tests'}
+            </button>
+          ) : null
+        }
+      />
 
       {loadError && (
-        <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+        <div className="flex items-center justify-between rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
           <span className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{loadError}</span>
-          <button onClick={fetchTests} className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold shadow-sm hover:bg-red-100">
+          <button type="button" onClick={fetchTests} className="pa-btn-secondary px-3 py-1.5 text-xs font-semibold">
             Retry
           </button>
         </div>
@@ -665,7 +667,7 @@ export default function MockTests() {
               <button
                 key={s}
                 onClick={() => setFilterSubject(s)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterSubject === s ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-violet-50 hover:text-violet-700'}`}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterSubject === s ? 'bg-accent-violet text-white' : 'bg-surface-secondary text-secondary hover:bg-accent-violet-soft accent-violet'}`}
               >
                 {s}
               </button>
@@ -676,7 +678,7 @@ export default function MockTests() {
               <button
                 key={d}
                 onClick={() => setFilterDifficulty(d)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterDifficulty === d ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-violet-50 hover:text-violet-700'}`}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${filterDifficulty === d ? 'bg-accent-violet text-white' : 'bg-surface-secondary text-secondary hover:bg-accent-violet-soft accent-violet'}`}
               >
                 {d}
               </button>
@@ -687,7 +689,7 @@ export default function MockTests() {
 
       {/* Test grid */}
       {filteredTests.length === 0 && tests.length > 0 ? (
-        <p className="py-8 text-center text-sm text-slate-400">No tests match the selected filters.</p>
+        <p className="py-8 text-center text-sm text-muted">No tests match the selected filters.</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredTests.map((t) => (
@@ -703,11 +705,16 @@ export default function MockTests() {
       )}
 
       {tests.length === 0 && !isLoading && !loadError && (
-        <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-          <ClipboardList className="mx-auto h-10 w-10 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-500">No mock tests yet.</p>
-          <p className="mt-1 text-xs text-slate-400">Click "Load Sample Tests" to add pre-built tests.</p>
-        </div>
+        <EmptyState
+          icon={ClipboardList}
+          title="No mock tests yet"
+          description='Click "Load Sample Tests" to add pre-built tests.'
+          action={
+            <button type="button" onClick={handleSeed} disabled={isSeeding} className="pa-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60">
+              {isSeeding ? 'Loading…' : 'Load Sample Tests'}
+            </button>
+          }
+        />
       )}
     </>
   );

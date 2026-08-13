@@ -3,8 +3,6 @@ import { Sparkles, Loader2, ChevronDown, ChevronUp, X } from "lucide-react";
 import api from "../../services/api";
 import { clearAuthAndRedirect } from "../../utils/auth";
 
-// ─── Per-module action definitions ───────────────────────────────────────────
-
 const MODULE_ACTIONS = {
   notes: [
     { label: "Explain", prompt: "Explain this note in simple, clear terms." },
@@ -34,19 +32,17 @@ const MODULE_ACTIONS = {
   ],
 };
 
-// ─── Suggestion chips ────────────────────────────────────────────────────────
-
 function SuggestionChips({ suggestions, onSelect, disabled }) {
   if (!suggestions || suggestions.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-2 mt-3">
-      <span className="text-xs text-gray-400 w-full">Follow-up suggestions:</span>
+    <div className="mt-3 flex flex-wrap gap-2">
+      <span className="w-full text-xs text-muted">Follow-up suggestions:</span>
       {suggestions.map((s, i) => (
         <button
           key={i}
           onClick={() => onSelect(s)}
           disabled={disabled}
-          className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-400 rounded-full px-3 py-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1 rounded-full border border-default bg-surface px-3 py-1 text-xs accent-violet transition-colors hover:bg-accent-violet-soft disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Sparkles size={10} />
           {s}
@@ -55,8 +51,6 @@ function SuggestionChips({ suggestions, onSelect, disabled }) {
     </div>
   );
 }
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ContextAI({ module, context, title }) {
   const [result, setResult] = useState(null);
@@ -68,7 +62,6 @@ export default function ContextAI({ module, context, title }) {
 
   const actions = MODULE_ACTIONS[module?.toLowerCase()] || [];
 
-  // Don't render if no actions are defined for this module
   if (actions.length === 0) return null;
 
   const handleAction = async (action) => {
@@ -79,7 +72,6 @@ export default function ContextAI({ module, context, title }) {
     setResult(null);
     setSuggestions([]);
 
-    // Attach optional title to context so the prompt builder can use it
     const enrichedContext = title
       ? { title, ...context }
       : context;
@@ -112,7 +104,6 @@ export default function ContextAI({ module, context, title }) {
     }
   };
 
-  // Follow-up suggestion sends a new contextual message
   const handleFollowUp = async (suggestion) => {
     if (loading) return;
     setLoading(true);
@@ -154,18 +145,17 @@ export default function ContextAI({ module, context, title }) {
   };
 
   return (
-    <div className="mt-4 border border-indigo-100 rounded-2xl bg-indigo-50/40 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-indigo-100">
+    <div className="mt-4 overflow-hidden rounded-2xl border border-default bg-accent-violet-soft">
+      <div className="flex items-center justify-between border-b border-default px-4 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-indigo-500" />
-          <span className="text-sm font-medium text-indigo-700">AI Actions</span>
+          <Sparkles size={14} className="accent-violet" />
+          <span className="text-sm font-medium accent-violet">AI Actions</span>
         </div>
         <div className="flex items-center gap-2">
           {(result || error) && (
             <button
               onClick={clearResult}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-muted transition-colors hover:text-secondary"
               title="Clear result"
             >
               <X size={14} />
@@ -174,7 +164,7 @@ export default function ContextAI({ module, context, title }) {
           {result && (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="text-indigo-400 hover:text-indigo-600 transition-colors"
+              className="accent-violet opacity-70 transition-opacity hover:opacity-100"
             >
               {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
@@ -182,8 +172,7 @@ export default function ContextAI({ module, context, title }) {
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="px-4 py-3 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 px-4 py-3">
         {actions.map((action) => {
           const isActive = activeAction === action.label && loading;
           return (
@@ -191,11 +180,11 @@ export default function ContextAI({ module, context, title }) {
               key={action.label}
               onClick={() => handleAction(action)}
               disabled={loading}
-              className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1 ${
+              className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
                 isActive
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600"
-              } disabled:opacity-60 disabled:cursor-not-allowed`}
+                  ? "border-transparent bg-accent-violet text-white"
+                  : "border-default bg-surface accent-violet hover:bg-accent-violet hover:text-white"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {isActive && <Loader2 size={11} className="animate-spin" />}
               {action.label}
@@ -204,14 +193,13 @@ export default function ContextAI({ module, context, title }) {
         })}
       </div>
 
-      {/* Result Panel */}
       {(result || error) && expanded && (
         <div className="px-4 pb-4">
           <div
             className={`rounded-xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
               error
-                ? "bg-red-50 border border-red-200 text-red-700"
-                : "bg-white border border-indigo-100 text-gray-700"
+                ? "border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]"
+                : "border border-default bg-surface text-secondary"
             }`}
           >
             {error || result}

@@ -33,8 +33,11 @@ export default function Admin() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
-        {error}
+      <div className="flex items-center justify-between rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
+        <span>{error}</span>
+        <button type="button" onClick={load} className="pa-btn-secondary px-3 py-1.5 text-xs font-semibold">
+          Retry
+        </button>
       </div>
     );
   }
@@ -92,7 +95,7 @@ export default function Admin() {
       </section>
 
       {selectedUser && (
-        <section className="rounded-2xl border border-default bg-accent-violet-soft p-5">
+        <section className="pa-card-elevated border-default bg-accent-violet-soft p-5">
           <h2 className="font-bold text-primary">{selectedUser.user.name}&apos;s productivity summary</h2>
           <p className="mt-2 text-sm text-secondary">
             Tasks: {selectedUser.summary.completedTasks}/{selectedUser.summary.tasks} ({selectedUser.summary.taskCompletionRate}%) · Goals: {selectedUser.summary.goals} · Roadmaps: {selectedUser.summary.roadmaps} · Focus: {selectedUser.summary.focusSessions} sessions / {selectedUser.summary.focusMinutes} min · Leaderboard: {selectedUser.summary.leaderboardPosition || 'Unranked'}

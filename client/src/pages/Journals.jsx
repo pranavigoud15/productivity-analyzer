@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, X, Loader2, Clock3, CalendarDays } from 'lucide-react';
+import { Plus, Trash2, X, Loader2, Clock3, CalendarDays, BookOpen } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
 
 const MOOD_META = {
-  great: { emoji: '🤩', label: 'Great', color: 'bg-emerald-100 text-emerald-700' },
-  good: { emoji: '🙂', label: 'Good', color: 'bg-sky-100 text-sky-700' },
-  okay: { emoji: '😐', label: 'Okay', color: 'bg-slate-100 text-slate-600' },
-  low: { emoji: '😔', label: 'Low', color: 'bg-amber-100 text-amber-700' },
-  stressed: { emoji: '😣', label: 'Stressed', color: 'bg-rose-100 text-rose-700' },
+  great: { emoji: '🤩', label: 'Great', color: 'bg-[var(--pa-accent-success-soft)] text-[var(--pa-accent-success)]' },
+  good: { emoji: '🙂', label: 'Good', color: 'bg-[var(--pa-accent-blue-soft)] text-[var(--pa-accent-blue)]' },
+  okay: { emoji: '😐', label: 'Okay', color: 'bg-surface-secondary text-secondary' },
+  low: { emoji: '😔', label: 'Low', color: 'bg-[var(--pa-accent-warning)]/10 text-[var(--pa-accent-warning)]' },
+  stressed: { emoji: '😣', label: 'Stressed', color: 'bg-[var(--pa-accent-danger)]/10 text-[var(--pa-accent-danger)]' },
 };
 
 function todayInputValue() {
@@ -22,11 +24,11 @@ function JournalEntryCard({ entry, isPending, onDelete }) {
     : null;
 
   return (
-    <li className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+    <li className="rounded-2xl border border-subtle bg-surface-secondary p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-700">{entry.title}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <p className="truncate text-sm font-semibold text-primary">{entry.title}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
             {formattedDate && (
               <span className="flex items-center gap-1">
                 <CalendarDays className="h-3 w-3" />
@@ -50,13 +52,13 @@ function JournalEntryCard({ entry, isPending, onDelete }) {
             onClick={() => onDelete(entry)}
             disabled={isPending}
             aria-label="Delete journal entry"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+            className="rounded-lg p-1.5 text-muted hover:bg-[var(--pa-accent-danger)]/10 hover:text-[var(--pa-accent-danger)] disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
-      <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{entry.content}</p>
+      <p className="mt-3 whitespace-pre-wrap text-sm text-secondary">{entry.content}</p>
     </li>
   );
 }
@@ -108,14 +110,14 @@ function AddJournalForm({ onSubmit, onClose }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 space-y-3 rounded-2xl bg-slate-50 p-3">
+    <form onSubmit={handleSubmit} className="mb-4 space-y-3 rounded-2xl bg-surface-secondary p-3">
       <input
         autoFocus
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Entry title"
         disabled={isSubmitting}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:opacity-60"
+        className="pa-input w-full px-3 py-2 text-sm disabled:opacity-60"
       />
       <textarea
         value={content}
@@ -123,14 +125,14 @@ function AddJournalForm({ onSubmit, onClose }) {
         placeholder="What's on your mind today?"
         disabled={isSubmitting}
         rows={4}
-        className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:opacity-60"
+        className="pa-input w-full resize-none px-3 py-2 text-sm disabled:opacity-60"
       />
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <select
           value={mood}
           onChange={(e) => setMood(e.target.value)}
           disabled={isSubmitting}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:opacity-60"
+          className="pa-input px-3 py-2 text-sm disabled:opacity-60"
         >
           {Object.entries(MOOD_META).map(([value, meta]) => (
             <option key={value} value={value}>
@@ -146,21 +148,21 @@ function AddJournalForm({ onSubmit, onClose }) {
           onChange={(e) => setStudyHours(e.target.value)}
           placeholder="Study hours"
           disabled={isSubmitting}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:opacity-60"
+          className="pa-input px-3 py-2 text-sm disabled:opacity-60"
         />
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
           disabled={isSubmitting}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100 disabled:opacity-60"
+          className="pa-input px-3 py-2 text-sm disabled:opacity-60"
         />
       </div>
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="pa-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
         >
           {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Save Entry
@@ -170,12 +172,12 @@ function AddJournalForm({ onSubmit, onClose }) {
           onClick={onClose}
           disabled={isSubmitting}
           aria-label="Cancel"
-          className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="rounded-xl p-2 text-muted hover:bg-hover hover:text-secondary"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      {error && <p className="text-xs font-medium text-red-500">{error}</p>}
+      {error && <p className="text-xs font-medium text-[var(--pa-accent-danger)]">{error}</p>}
     </form>
   );
 }
@@ -240,7 +242,7 @@ export default function Journals() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
         <Loader2 className="h-5 w-5 animate-spin" />
         Loading your journal...
       </div>
@@ -249,29 +251,26 @@ export default function Journals() {
 
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">Journal</h1>
-        <p className="mt-1 text-slate-500">{entries.length} entries logged</p>
-      </div>
+      <PageHeader
+        title="Journal"
+        description={`${entries.length} entries logged`}
+      />
 
       {loadError && (
-        <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+        <div className="flex items-center justify-between rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
           <span>{loadError}</span>
-          <button
-            onClick={fetchEntries}
-            className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100"
-          >
+          <button type="button" onClick={fetchEntries} className="pa-btn-secondary px-3 py-1.5 text-xs font-semibold">
             Retry
           </button>
         </div>
       )}
 
-      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <section className="pa-card p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">All Entries</h2>
+          <h2 className="text-lg font-bold text-primary">All Entries</h2>
           <button
             onClick={() => setIsAdding((prev) => !prev)}
-            className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
+            className="pa-btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold"
           >
             <Plus className="h-4 w-4" />
             New Entry
@@ -282,9 +281,16 @@ export default function Journals() {
           {isAdding && <AddJournalForm onSubmit={handleAddEntry} onClose={() => setIsAdding(false)} />}
 
           {entries.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">
-              No journal entries yet — write your first one to start tracking your streak.
-            </p>
+            <EmptyState
+              icon={BookOpen}
+              title="No journal entries yet"
+              description="Write your first one to start tracking your streak."
+              action={
+                <button type="button" onClick={() => setIsAdding(true)} className="pa-btn-primary px-4 py-2 text-sm font-medium">
+                  New Entry
+                </button>
+              }
+            />
           ) : (
             <ul className="space-y-3">
               {entries.map((entry) => (

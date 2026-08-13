@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Mail,
   Loader2,
   ListTodo,
   CheckCircle2,
@@ -15,149 +14,38 @@ import {
   Sparkles,
   BookOpen,
   StickyNote,
+  Timer,
+  Bot,
+  ArrowRight,
 } from 'lucide-react';
 import API from '../services/api';
 import { getAuthHeaders, clearAuthAndRedirect } from '../utils/auth';
 import StatCard from '../components/common/StatCard';
+import EmptyState from '../components/ui/EmptyState';
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
-function CurrentGoalCard({ goal }) {
-  if (!goal) {
-    return (
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800">Current Goal</h2>
-        <p className="mt-4 text-sm text-slate-400">
-          No active goals yet — create one to get started.
-        </p>
-      </div>
-    );
-  }
-
-  const progress = Math.min(100, Math.max(0, Number(goal.progress) || 0));
-  const formattedDate = goal.targetDate
-    ? new Date(goal.targetDate).toLocaleDateString([], {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : null;
+function ProgressCard({ title, subtitle, progress, footer, accent = 'violet' }) {
+  const barColor = accent === 'blue' ? 'bg-[var(--pa-accent-blue)]' : 'bg-accent-violet';
 
   return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-bold text-slate-800">Current Goal</h2>
-      <p className="mt-3 truncate text-sm font-medium text-slate-700">
-        {goal.title}
-      </p>
-      <div className="mt-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div
-            className="h-full rounded-full bg-indigo-500 transition-all"
-            style={{ width: `${progress}%` }}
-          />
+    <div className="pa-card p-5">
+      <h2 className="text-sm font-semibold text-primary">{title}</h2>
+      {subtitle && <p className="mt-2 truncate text-sm font-medium text-secondary">{subtitle}</p>}
+      {typeof progress === 'number' && (
+        <div className="mt-3">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
+            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+          </div>
+          <p className="mt-1.5 text-xs text-muted">{progress}% complete</p>
         </div>
-        <div className="mt-1.5 flex items-center justify-between text-xs text-slate-400">
-          <span>{progress}% complete</span>
-          {formattedDate && (
-            <span className="flex items-center gap-1">
-              <CalendarDays className="h-3 w-3" />
-              {formattedDate}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RoadmapProgressCard({ roadmap }) {
-  if (!roadmap) {
-    return (
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800">Roadmap Progress</h2>
-        <p className="mt-4 text-sm text-slate-400">
-          No active roadmap yet.
-        </p>
-      </div>
-    );
-  }
-
-  const progress = Math.min(100, Math.max(0, Number(roadmap.progress) || 0));
-  const currentMilestone = roadmap.currentMilestone;
-
-  return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-bold text-slate-800">Roadmap Progress</h2>
-      <p className="mt-3 truncate text-sm font-medium text-slate-700">
-        {roadmap.title}
-      </p>
-      <div className="mt-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div
-            className="h-full rounded-full bg-sky-500 transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className="mt-1.5 text-xs text-slate-400">
-          {progress}% complete
-        </p>
-      </div>
-      <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
-        <Map className="h-3.5 w-3.5 text-sky-500" />
-        {currentMilestone
-          ? `Current: ${currentMilestone.title}`
-          : 'All milestones complete'}
-      </p>
-    </div>
-  );
-}
-
-function RecentJournalCard({ entry }) {
-  if (!entry) {
-    return (
-      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800">
-          Recent Journal Entry
-        </h2>
-        <p className="mt-4 text-sm text-slate-400">
-          No journal entries yet.
-        </p>
-      </div>
-    );
-  }
-
-  const formattedDate = entry.date
-    ? new Date(entry.date).toLocaleDateString([], {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : null;
-
-  return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-bold text-slate-800">
-        Recent Journal Entry
-      </h2>
-      <p className="mt-3 truncate text-sm font-medium text-slate-700">
-        {entry.title}
-      </p>
-      {formattedDate && (
-        <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-          <CalendarDays className="h-3 w-3" />
-          {formattedDate}
-        </p>
       )}
-      {entry.content && (
-        <p className="mt-2 line-clamp-2 text-xs text-slate-500">
-          {entry.content}
-        </p>
-      )}
+      {footer && <div className="mt-3 text-xs text-secondary">{footer}</div>}
     </div>
   );
 }
@@ -169,12 +57,11 @@ function PendingTaskRow({ task }) {
     <li>
       <Link
         to={`/tasks?verifyTaskId=${taskId}`}
-        className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3 transition-all hover:border-slate-200 hover:bg-slate-100/80"
+        className="flex items-center gap-3 rounded-xl border border-subtle bg-surface-secondary p-3 transition hover:border-default hover:bg-hover"
       >
-        <Circle className="h-4 w-4 shrink-0 text-slate-300" />
-        <p className="truncate text-sm font-medium text-slate-700">
-          {task.title}
-        </p>
+        <Circle className="h-4 w-4 shrink-0 text-muted" />
+        <p className="min-w-0 flex-1 truncate text-sm font-medium text-primary">{task.title}</p>
+        <ArrowRight className="h-4 w-4 shrink-0 text-muted" />
       </Link>
     </li>
   );
@@ -203,7 +90,6 @@ export default function Dashboard() {
         clearAuthAndRedirect();
         return;
       }
-
       setLoadError('Could not load your dashboard. Please try again.');
     } finally {
       setIsLoading(false);
@@ -215,13 +101,12 @@ export default function Dashboard() {
       clearAuthAndRedirect();
       return;
     }
-
-    fetchOverview();
+    queueMicrotask(fetchOverview);
   }, [fetchOverview]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
         <Loader2 className="h-5 w-5 animate-spin" />
         Loading your dashboard...
       </div>
@@ -230,184 +115,172 @@ export default function Dashboard() {
 
   if (!summary) {
     return (
-      <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+      <div className="flex items-center justify-between rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
         <span>{loadError || 'Could not load your dashboard.'}</span>
-        <button
-          onClick={fetchOverview}
-          className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100"
-        >
+        <button type="button" onClick={fetchOverview} className="pa-btn-secondary px-3 py-1.5 text-xs font-semibold">
           Retry
         </button>
       </div>
     );
   }
 
-  const taskGoalStats = [
-    {
-      label: 'Total Tasks',
-      value: summary.totalTasks,
-      icon: ListTodo,
-      color: 'violet',
-    },
-    {
-      label: 'Completed Tasks',
-      value: summary.completedTasks,
-      icon: CheckCircle2,
-      color: 'emerald',
-    },
-    {
-      label: 'Pending Tasks',
-      value: summary.pendingTasks,
-      icon: Target,
-      color: 'sky',
-    },
-    {
-      label: 'Current Streak',
-      value: `${summary.currentStreak} day${
-        summary.currentStreak === 1 ? '' : 's'
-      }`,
-      icon: Flame,
-      color: 'orange',
-    },
-    {
-      label: 'Total Goals',
-      value: summary.totalGoals,
-      icon: Trophy,
-      color: 'indigo',
-    },
-    {
-      label: 'Completed Goals',
-      value: summary.completedGoals,
-      icon: Award,
-      color: 'teal',
-    },
-  ];
+  const displayName = user?.name || JSON.parse(localStorage.getItem('user') || '{}').name || 'there';
 
-  const journalNoteStats = [
-    {
-      label: 'Journal Entries',
-      value: summary.journalCount,
-      icon: BookOpen,
-      color: 'cyan',
-    },
-    {
-      label: 'Notes',
-      value: summary.notesCount,
-      icon: StickyNote,
-      color: 'amber',
-    },
-    {
-      label: 'Journal Streak',
-      value: `${summary.journalStreak} day${
-        summary.journalStreak === 1 ? '' : 's'
-      }`,
-      icon: Flame,
-      color: 'rose',
-    },
+  const overviewStats = [
+    { label: 'Total Tasks', value: summary.totalTasks, icon: ListTodo, color: 'violet' },
+    { label: 'Completed', value: summary.completedTasks, icon: CheckCircle2, color: 'emerald' },
+    { label: 'Pending', value: summary.pendingTasks, icon: Target, color: 'sky' },
+    { label: 'Streak', value: `${summary.currentStreak}d`, icon: Flame, color: 'orange' },
+    { label: 'Active Goals', value: summary.activeGoals, icon: Trophy, color: 'indigo' },
+    { label: 'Goals Done', value: summary.completedGoals, icon: Award, color: 'teal' },
   ];
 
   return (
     <>
       {loadError && (
-        <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+        <div className="flex items-center justify-between rounded-xl border border-[var(--pa-accent-danger)]/30 bg-[var(--pa-accent-danger)]/10 p-4 text-sm text-[var(--pa-accent-danger)]">
           <span>{loadError}</span>
-          <button
-            onClick={fetchOverview}
-            className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-100"
-          >
+          <button type="button" onClick={fetchOverview} className="pa-btn-secondary px-3 py-1.5 text-xs font-semibold">
             Retry
           </button>
         </div>
       )}
 
-      <section className="rounded-3xl border border-white bg-gradient-to-br from-violet-100 via-sky-50 to-emerald-50 p-6 shadow-sm sm:p-8">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
-          {getGreeting()}
-        </h1>
-
-        <p className="mt-1 text-slate-500">
-          Welcome back! Let's make today productive.
-        </p>
-
-        {user?.email && (
-          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm">
-            <Mail className="h-3.5 w-3.5" />
-            {user.email}
+      <section className="pa-card-elevated relative overflow-hidden p-6 sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-accent-violet-soft blur-3xl" />
+        <div className="relative">
+          <p className="text-sm font-medium text-secondary">Productivity overview</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
+            {getGreeting()}, {displayName}
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-secondary">
+            Here&apos;s your productivity overview for today.
           </p>
-        )}
-      </section>
-
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {taskGoalStats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {journalNoteStats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </section>
-
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <CurrentGoalCard goal={summary.activeGoal} />
-        <RoadmapProgressCard roadmap={summary.activeRoadmap} />
-        <RecentJournalCard entry={summary.recentJournalEntry} />
-      </section>
-
-      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800">
-          Top Pending Tasks
-        </h2>
-
-        <div className="mt-4">
-          {summary.topPendingTasks.length === 0 ? (
-            <p className="py-4 text-center text-sm text-slate-400">
-              Nothing pending — you're all caught up.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {summary.topPendingTasks.map((task) => (
-                <PendingTaskRow
-                  key={task._id || task.id}
-                  task={task}
-                />
-              ))}
-            </ul>
-          )}
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link to="/focus" className="pa-btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
+              <Timer className="h-4 w-4" />
+              Focus Session
+            </Link>
+            <Link to="/tasks" className="pa-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
+              <ListTodo className="h-4 w-4" />
+              View Tasks
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
-          <Sparkles className="h-5 w-5 text-violet-500" />
-          Quick Summary
-        </h2>
+      <section>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted">Overview</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {overviewStats.map((stat) => (
+            <StatCard key={stat.label} {...stat} />
+          ))}
+        </div>
+      </section>
 
-        <p className="mt-3 text-sm leading-relaxed text-slate-600">
-          You've completed{' '}
-          <span className="font-semibold text-slate-800">
-            {summary.completedTasks}
-          </span>{' '}
-          of{' '}
-          <span className="font-semibold text-slate-800">
-            {summary.totalTasks}
-          </span>{' '}
-          tasks, with a current streak of{' '}
-          <span className="font-semibold text-slate-800">
-            {summary.currentStreak} day
-            {summary.currentStreak === 1 ? '' : 's'}
-          </span>
-          . You have{' '}
-          <span className="font-semibold text-slate-800">
-            {summary.activeGoals}
-          </span>{' '}
-          active goal
-          {summary.activeGoals === 1 ? '' : 's'}
-          {summary.activeGoal
-            ? ` — currently focused on "${summary.activeGoal.title}".`
-            : '.'}
-        </p>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section className="pa-card p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-primary">Top Pending Tasks</h2>
+            <Link to="/tasks" className="text-xs font-medium accent-violet hover:underline">View all</Link>
+          </div>
+          {summary.topPendingTasks.length === 0 ? (
+            <EmptyState
+              icon={ListTodo}
+              title="No pending tasks"
+              description="You're all caught up."
+              action={<Link to="/tasks" className="pa-btn-primary px-4 py-2 text-sm font-medium">Add Task</Link>}
+            />
+          ) : (
+            <ul className="space-y-2">
+              {summary.topPendingTasks.map((task) => (
+                <PendingTaskRow key={task._id || task.id} task={task} />
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="pa-card p-5">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 accent-violet" />
+            <h2 className="text-sm font-semibold text-primary">Productivity AI</h2>
+          </div>
+          <p className="mt-2 text-sm text-secondary">Your AI assistant is ready to help you plan and stay on track.</p>
+          <Link to="/assistant" className="mt-4 inline-flex w-full items-center justify-center gap-2 pa-btn-primary px-4 py-2.5 text-sm font-medium">
+            <Bot className="h-4 w-4" />
+            Open Assistant
+          </Link>
+        </section>
+      </div>
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {summary.activeGoal ? (
+          <ProgressCard
+            title="Current Goal"
+            subtitle={summary.activeGoal.title}
+            progress={Number(summary.activeGoal.progress) || 0}
+            footer={
+              summary.activeGoal.targetDate && (
+                <span className="flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" />
+                  Due {new Date(summary.activeGoal.targetDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              )
+            }
+          />
+        ) : (
+          <div className="pa-card p-5">
+            <h2 className="text-sm font-semibold text-primary">Current Goal</h2>
+            <p className="mt-3 text-sm text-muted">No active goals yet.</p>
+            <Link to="/goals" className="mt-4 inline-block text-xs font-medium accent-violet hover:underline">Create a goal</Link>
+          </div>
+        )}
+
+        {summary.activeRoadmap ? (
+          <ProgressCard
+            title="Roadmap Progress"
+            subtitle={summary.activeRoadmap.title}
+            progress={Number(summary.activeRoadmap.progress) || 0}
+            accent="blue"
+            footer={
+              <span className="flex items-center gap-1">
+                <Map className="h-3 w-3" />
+                {summary.activeRoadmap.currentMilestone
+                  ? `Current: ${summary.activeRoadmap.currentMilestone.title}`
+                  : 'All milestones complete'}
+              </span>
+            }
+          />
+        ) : (
+          <div className="pa-card p-5">
+            <h2 className="text-sm font-semibold text-primary">Roadmap Progress</h2>
+            <p className="mt-3 text-sm text-muted">No active roadmap yet.</p>
+            <Link to="/roadmaps" className="mt-4 inline-block text-xs font-medium accent-violet hover:underline">View roadmaps</Link>
+          </div>
+        )}
+
+        {summary.recentJournalEntry ? (
+          <div className="pa-card p-5">
+            <h2 className="text-sm font-semibold text-primary">Recent Journal</h2>
+            <p className="mt-2 truncate text-sm font-medium text-secondary">{summary.recentJournalEntry.title}</p>
+            {summary.recentJournalEntry.content && (
+              <p className="mt-1 line-clamp-2 text-xs text-muted">{summary.recentJournalEntry.content}</p>
+            )}
+            <Link to="/journals" className="mt-4 inline-block text-xs font-medium accent-violet hover:underline">Open journal</Link>
+          </div>
+        ) : (
+          <div className="pa-card p-5">
+            <h2 className="text-sm font-semibold text-primary">Recent Journal</h2>
+            <p className="mt-3 text-sm text-muted">No journal entries yet.</p>
+            <Link to="/journals" className="mt-4 inline-block text-xs font-medium accent-violet hover:underline">Write entry</Link>
+          </div>
+        )}
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Journal Entries" value={summary.journalCount} icon={BookOpen} color="cyan" />
+        <StatCard label="Notes" value={summary.notesCount} icon={StickyNote} color="amber" />
+        <StatCard label="Journal Streak" value={`${summary.journalStreak}d`} icon={Flame} color="rose" />
       </section>
     </>
   );
